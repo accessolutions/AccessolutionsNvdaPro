@@ -34,6 +34,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				gui.mainFrame.sysTrayIcon.menu.RemoveItem(self.submenu_item)
 			except:
 				pass
+			self.submenu_item.Destroy()
 
 	def  terminate(self):
 		try:
