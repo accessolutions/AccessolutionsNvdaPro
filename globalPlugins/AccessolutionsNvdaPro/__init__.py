@@ -9,8 +9,8 @@ import api
 import speech
 import wx
 import gui
-import remoteRequests
-import updateAddon
+from . import remoteRequests
+from . import updateAddon
 import addonHandler
 addonHandler.initTranslation()
 

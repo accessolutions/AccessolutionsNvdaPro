@@ -9,7 +9,7 @@ class AppModule(appModuleHandler.AppModule):
 
 	def event_appModule_gainFocus(self):
 		speech.cancelSpeech()
-		speech.speechMode = speech.speechMode_off
+		speech.setSpeechMode(speech.SpeechMode.off)
 		
 	def event_appModule_loseFocus(self):
-		speech.speechMode = speech.speechMode_talk
+		speech.setSpeechMode(speech.SpeechMode.talk)
