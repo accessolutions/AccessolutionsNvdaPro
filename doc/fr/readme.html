@@ -1,387 +1,97 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<!DOCTYPE HTML>
+<html lang="fr_FR">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="generator" content="MarkdownForever" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
 <title>Accessolutions NVDA Pro</title>
-<meta name="description" content="This file was exported from WriteMonkey editor.">
-<style type="text/css">
-
-
-/*======================================
-THEME NAME: Extreme Georgia 0.1
-DESCRIPTION: Typographic Layour for Smashing Magazine competition
-CODENAME: ExtremeGeorgia
-VERSION: 0.1
-AUTHOR: Mohd Huzairy bin Mohd Rezuan @ Bat InfoMalaya
-AUTHOR URI: http://www.mentariworks.com
-LAST DATE MODIFIED: 28 June 2009
-STYLE NAME: Master stylesheet
-======================================*/
-
-body
-{
-	background:#fff;
-	font: 76%/115% georgia,verdana,arial;
-	text-align:left;
-	line-height:20px;
-	color:#444;
-}
-
-blockquote
-{
-	background:transparent url(../images/blockquote.png) no-repeat left 9px;
-	border-top:3px double #eee;
-	border-bottom:3px double #eee;
-	padding:15px 0 3px 0;
-	margin-bottom:10px;
-	font-style:italic;
-}
-
-/* Wrapper & Container */
-#wrapper
-{
-	width:960px;
-	margin:0 auto;
-}
-
-/* Header */
-#header
-{
-	text-align:center;
-	margin:80px 0;
-	width:960px;
-}
-
-#header h1 a
-{
-	font-size:6em;
-	font-weight:normal;
-	color:#666;
-}
-
-#header p
-{
-	font-size:2em;
-	color:#999;
-	margin-top:20px;
-	letter-spacing:3px;
-}
-
-/* Content */
-#outer-space
-{
-	width:750px;
-	float:left;
-}
-
-#hfeed
-{
-	width:540px;
-	border:1px solid #ccc;
-	float:right;
-	padding-bottom:17px;
-	margin-bottom:20px;
-}
-
-#page-info
-{
-	background:#ccc url(../images/info_bg.png) repeat-x;
-	color:#fff;
-	font-variant:small-caps;
-	text-align:center;
-	padding:2px 0;
-	font-size:1.2em;
-}
-
-#page-info span
-{
-	background:#ccc;
-	padding:0 3px;
-	letter-spacing:3px;
-}
-
-.hentry
-{
-	width:520px;
-	margin:20px 0;
-	overflow:hidden;
-	padding:0 10px;
-}
-
-.entry-title
-{
-	font-size:2.2em;
-	font-weight:normal;
-	line-height:175%;
-}
-
-.entry-meta
-{
-	text-align:center;
-	background:transparent url(../images/lala.png) no-repeat bottom center;
-	padding:0 0 20px 0;
-	margin:0 0 10px 0;
-	color:#999;
-}
-
-.entry-meta p, .entry-meta abbr
-{
-	letter-spacing:3px;
-	border:none;
-}
-
-.metadata
-{
-	background:transparent url(../images/metadata-bg.png) no-repeat top center;
-	text-align:center;
-	padding:25px 0 10px 0;
-	color:#999;
-	letter-spacing:2px;
-}
-
-.entry-content
-{
-	padding:0 10px;
-}
-
-.entry-content img
-{
-	margin-bottom:10px;
-}
-
-.entry-content p
-{
-	font-size:1.15em;
-	margin-bottom:15px;
-	line-height:165%;
-	color:#444;
-	width:500px;
-	text-align:justify;
-}
-
-.separator
-{
-	border-top:1px dotted #ccc;
-	margin:20px 0 30px 0;
-}
-
-#page-navigation
-{
-	margin:-10px 0 10px 0;
-}
-
-/* Links */
-a 
-{
-	color:#f25f0f;
-}
-
-a:hover
-{
-	color:#444;
-	border-bottom:1px dotted #ccc;
-}
-
-#header a:hover
-{
-	border:none;
-}
-
-.previous a
-{
-	float:left;
-	padding:3px 10px;
-	background:#ccc;
-	color:#fff;
-	margin-left:20px;
-	font-variant:small-caps;
-	font-size:1.2em;
-	margin-top:-3px;
-}
-
-.next a
-{
-	float:right;
-	padding:3px 10px;
-	background:#ccc;
-	color:#fff;
-	margin-right:20px;
-	font-variant:small-caps;
-	font-size:1.2em;
-	margin-top:-3px;
-}
-
-.previous a:hover, .next a:hover
-{
-	border:none;
-	background:#333;
-}
-
-/* Sidebar */
-#left-sidebar
-{
-	width:175px;
-	padding:45px 20px 0 10px;
-	float:left;
-	text-align:right;
-}
-
-#right-sidebar
-{
-	width:175px;
-	padding:45px 10px 0 20px;
-	float:right;
-}
-
-#left-sidebar h3
-{
-	font-variant:small-caps;
-	font-size:1.2em;
-	font-weight:normal;
-	color:#999;
-	padding-right:15px;
-	margin-bottom:10px;
-	border-bottom:1px dotted #ccc;
-	letter-spacing:3px;
-}
-
-#right-sidebar h3
-{
-	font-variant:small-caps;
-	font-size:1.2em;
-	font-weight:normal;
-	color:#999;
-	padding-left:15px;
-	margin-bottom:10px;
-	border-bottom:1px dotted #ccc;
-	letter-spacing:3px;
-}
-
-#left-sidebar ul li
-{
-	background:transparent url(../images/bullet.png) no-repeat right 5px;
-	padding-right:15px;
-	margin-bottom:5px;
-}
-
-#right-sidebar ul li
-{
-	background:transparent url(../images/bullet.png) no-repeat left 5px;
-	padding-left:15px;
-	margin-bottom:5px;
-}
-
-.widget
-{
-	margin-bottom:30px;
-}
-
-/* Footer */
-#footer
-{
-	height:70px;
-	text-align:center;
-	padding-bottom:10px;
-	margin:20px 0;
-	color:#999;
-	letter-spacing:2px;
-}
-
-/* Images */
-.alignleft
-{
-	float:left;
-	margin:0 20px 10px 0;
-}
-
-.alignright
-{
-	float:right;
-	margin:0 0 10px 20px;
-}
-
-/* Positioning */
-.clear
-{
-	clear:both;
-}
-</style>
-</head>
-<body>
-<h1>NVDA Pro Accessolutions</h1>
-<p>Version 2017.09.03
-Copyright 2016 Accessolutions</p>
-<p>Ce module apporte des fonctionnalités et des améliorations au lecteur d'écran NVDA, rendant son utilisation plus confortable tout en facilitant la transition depuis d'autres lecteurs d'écran. </p>
-<h2>Affichage braille</h2>
+	</head>
+	<body>
+		<header id="header-block"><h1 class="title">Accessolutions NVDA Pro</h1>
+<p class="subtitle"></p></header>
+		<main id="main-content"><h1 id="nvda-pro-accessolutions">
+ NVDA Pro Accessolutions
+</h1>
+<p>
+ Version 2024.04.02 Copyright 2024 Accessolutions
+</p>
+<p>
+ Cette extension apporte des fonctionnalités et des améliorations au lecteur
+d'écran NVDA, qui visent pincipalement à faciliter la transition depuis le lecteur d'écran JAWS, particulièrement en mode navigation web.
+</p>
+<h2 id="mode-navigation">
+ Mode navigation
+</h2>
+<p>
+ Des ajustements ont été apportés aux raccourcis clavier disponibles en
+mode navigation pour plus de cohérence avec la langue française et le lecteur d'écran JAWS. Ce mode est principalement actif
+au sein d'un navigateur internet ou tout autre fenêtre de type web.
+voici la liste des raccourcis clavier modifiés. Veuillez noter que l'on peut revenir aux raccourcis web par défaut de NVDA en décochant la case idoine dans la rubrique "AccessolutionsNVDAPro" des préférences de NVDA:
+</p>
 <ul>
-<li>Des améliorations ont été apportées au niveau de l'affichage - des informations délivrées par les afficheurs braille compatibles afin de se rapprocher du mode dit structuré que l'on peut trouver dans d'autres lecteurs d'écran. Par défaut, NVDA affiche en braille un grand nombre d'informations telles que le titre de la fenêtre, le contenu de la boîte de dialogue, le nom de l'objet et son type. Le module s'efforce donc de n'afficher que l'information située sous le curseur et prononcée par la synthèse vocale, privilégiant ainsi la pertinence par rapport à la quantité. Il est  toujours possible si nécessaire d'utiliser les touches de défilement avant et arrière de l'afficheur pour prendre connaissance  des autres informations.</li>
-<li>Il est possible de basculer entre le braille intégral et le braille abrégé en utilisant la combinaison de touches Win+Ctrl+B.</li>
+ <li>
+  Rechercher, Ctrl+F : Affiche un dialogue qui vous permet de rechercher du texte dans le document courant
+ </li>
+ <li>
+  Rechercher suivant, F3 : Recherche l'occurrence suivante du texte préalablement recherché dans le document
+ </li>
+ <li>
+  Rechercher précédent, Maj+f3 : Recherche l'occurrence précédente du texte préalablement recherché dans le document
+ </li>
+ <li>
+  Réactualiser le document, NVDA+Echap : Recharge le document en cours, (utile si le contenu de la page semble incomplet.
+ </li>
+ <li>
+  Aller au début du conteneur, Maj+Q : Se déplace au début du conteneur (liste, tableau etc.) où le curseur est positionné
+ </li>
+ <li>
+  Aller après la fin du conteneur, Q : Se déplace après la fin du conteneur (liste, tableau etc.) où le curseur est positionné.
+ </li>
 </ul>
-<h2>Microsoft Outlook</h2>
+<p>
+ les raccourcis de navigation rapide, ces raccourcis à touche unique permettant d'atteindre un champ donné au sein d'un document pris en
+charge ont également été modifiés. Les touches suivantes permettent
+d'aller à l'élément suivant. En les combinant avec maj, on retourne à
+l'élément précédent.
+</p>
 <ul>
-<li>La gestion de pièces jointes dans les messages reçus a été améliorée. Les images présentes dans un courrier électronique, comme par exemple celles insérées dans une signature, ne sont plus traitées comme des pièces jointes, évitant ainsi les annonces de fichiers joints alors qu'il n'y en a pas.</li>
-<li>Dans la liste des messages, le noms des en-têtes de colonnes telles que objet, expéditeur ou encore destinataire ne sont plus prononcées. Seul leur contenu est vocalisé, ce qui rend la lecture nettement plus fluide.</li>
+ <li>
+  t : titre
+ </li>
+ <li>
+  y : tableau
+ </li>
+ <li>
+  n : lien non visité
+ </li>
+ <li>
+  u : bouton
+ </li>
+ <li>
+  z : liste déroulante
+ </li>
+ <li>
+  c : balise de citation
+ </li>
+ <li>
+  h : cadre
+ </li>
 </ul>
-<h2>OpenBook</h2>
-<p>Le module améliore le fonctionnement du logiciel de reconnaissance de caractères OpenBook quand NVDA est en cours d'utilisation. Lorsque le focus se trouve sur la fenêtre d'openBook, le synthétiseur vocal de NVDA est automatiquement mis en veille pour basculer sur celui d'OpenBook, permettant ainsi une utilisation transparente des commandes de ce dernier, tout en bénéficiant du suivi braille de NVDA le cas échéant. NVDA reprendra la main lors de la fermeture d'OpenBook ou si le focus ne se trouve plus sur  la fenêtre de ce dernier.</p>
-<h2>Mode navigation</h2>
-<p>Des ajustements ont été apportés aux raccourcis clavier disponibles en mode navigation pour plus de cohérence avec  la langue française et les autres lecteurs d'écran pour Windows. Ce mode est principalement actif au sein d'un navigateur internet ou tout autre fenêtre de type web. voici la liste des raccourcis clavier modifiés :</p>
-<table>
-<thead>
-<tr>
-	<th>Nom</th>
-	<th>Touche</th>
-	<th>Description</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-	<td>Rechercher</td>
-	<td>Ctrl+F</td>
-	<td>Affiche un dialogue qui vous permet de rechercher du texte dans le document courant</td>
-</tr>
-<tr>
-	<td>Rechercher suivant</td>
-	<td>f3</td>
-	<td>Recherche l'occurrence suivante du texte préalablement recherché dans le document</td>
-</tr>
-<tr>
-	<td>Rechercher précédent</td>
-	<td>maj+f3</td>
-	<td>Recherche l'occurrence précédente du texte préalablement recherché dans le document</td>
-</tr>
-<tr>
-	<td>Réactualiser le document</td>
-	<td>NVDA+Echap</td>
-	<td>Recharge le document en cours, (utile si le contenu de la page semble incomplet.</td>
-</tr>
-<tr>
-	<td>Aller au début du conteneur</td>
-	<td>Maj+Q</td>
-	<td>Se déplace au début du conteneur (liste, tableau etc.) où le curseur est positionné</td>
-</tr>
-<tr>
-	<td>Aller après la fin du conteneur</td>
-	<td>Q</td>
-	<td>Se déplace après la fin du conteneur (liste, tableau etc.) où le curseur se trouve</td>
-</tr>
-</tbody>
-</table>
-<p>les raccourcis de navigation rapide, ces raccourcis à touche unique permettant d'atteindre un champ donné au sein d'un document pris en charge ont également été modifiés. Les touches suivantes permettent d'aller à l'élément suivant. En les combinant avec maj, on retourne à l'élément précédent.</p>
+<h2 id="recherche-incrementale">
+ Recherche incrémentale
+</h2>
+<p>
+ La "Recherche incrémentale" est une fonctionnalité pratique de l'extension AccessolutionsNVDAPro, qui permet de rechercher une châine de caractères dans un contenu web, plus rapidement qu'avec la boîte de dialogue de recherche classique. Supposons que vous voulez trouver un lien de contact sur une page web. Il vous suffit simplement de faire le raccourci clavier Ctrl+i, de taper tout ou partie du mot "contact", et le curseur sera automatiquement placé sur la première occurrence contenant la chaîne de caractères saisie.
+</p>
+<h2 id="affichage-braille">
+ Affichage braille
+</h2>
 <ul>
-<li>t : titre </li>
-<li>y : tableau </li>
-<li>n : lien non visité </li>
-<li>u : bouton </li>
-<li>z : liste déroulante </li>
-<li>c : balise de citation </li>
-<li>h : cadre </li>
+ <li>
+  Il est possible de basculer entre le braille intégral et le braille
+abrégé en utilisant la combinaison de touches Win+Ctrl+B.
+ </li>
 </ul>
-<h2>Correction diverses</h2>
-<ul>
-<li>La fonction appelée par le raccourci NVDA+F7 et permettant d'afficher la liste des éléments d'une page web a été modifié afin de fonctionner même lorsque le mode formulaire est activé.</li>
-<li>Pour les utilisateurs avancés développant des scripts, un mode Debug a été ajouté afin d'aider les développeurs à tester leurs scripts grâce à l'émission de sinaux sonores en cas d'erreurs dans le code. Pour passer du mode Debug au mode normal, utiliser la combinaison de touches Ctrl+Windows+D.</li>
-</ul>
-
-</body>
+</main>
+	</body>
 </html>
