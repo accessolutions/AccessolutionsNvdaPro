@@ -1,16 +1,51 @@
 # *-* coding: utf8 *-*
-# Version 2018.06.19
+# Version 2024.04.16
 
-import globalPluginHandler
 import os
-import ui
-import gui
+import re
+from urllib import request, parse
 import wx
 from logHandler import log
 import api
-import speech
-import random
-import urllib
+import globalPluginHandler
+import gui
+
+def askRemote():
+	username = os.getenv("username")
+	computername = os.getenv("computername")
+	params = {
+		"username": username,
+		"computername": computername
+	}
+	url = "https://accessolutions.fr/nvdaremote"
+	data = parse.urlencode(params).encode()
+	try:
+		with request.urlopen(url, data=data) as reponse:
+			urlRedirection = reponse.geturl()
+			with request.urlopen(urlRedirection) as reponse_finale:
+				return False, None
+	except Exception as e:
+		if not hasattr(e, "code"):
+			log.error(e)
+			return False, f"Une erreur est survenue lors de la connexion ({e.reason})."
+		if e.code == 302 and e.url:
+			return True, e.url
+		log.error(e)
+		return False, f"Une erreur est survenue lors de la connexion ({e.code}, {e.reason})."
+	return False, "Une erreur est survenue lors de la connexion. Veuillez réessayer plus tard."
+
+def getNVDARemoteURL():
+	url = "https://nvdaremote.com/download/"
+	try:
+		response = request.urlopen(url)
+		webContent = response.read().decode('utf-8')
+		addon_url_match = re.search(r'https?://.*?\.nvda-addon', webContent)
+		if addon_url_match:
+			return addon_url_match.group(0)
+	except Exception as e:
+		log.error(e)
+	return None
+
 
 def runRemote ():
 	remote = None
@@ -19,40 +54,31 @@ def runRemote ():
 			remote = g
 			break
 	if remote is None:
-		ui.message (u"Le module NVDA Remote est introuvable")
+		msg = "NVDA Remote non installé ou non activé. Souhaitez-vous l'installer ?"
+		if gui.messageBox(msg, "Assistance Accessolutions", wx.YES|wx.NO) == wx.YES:
+			url = getNVDARemoteURL()
+			if url:
+				tmp_dir = os.path.join(os.getenv("TEMP"), "NVDARemote.nvda-addon")
+				with request.urlopen(url) as response, open(tmp_dir, "wb") as f:
+					f.write(response.read())
+				os.startfile(tmp_dir)
+			else:
+				gui.messageBox("Impossible de récupérer l'URL de téléchargement de NVDA Remote.", "Assistance Accessolutions - erreur", wx.OK | wx.ICON_ERROR)
 		return
 	if remote.is_connected ():
 		if gui.messageBox(u"Voulez-vous vous déconnecter ?",
-						u"Assistance Accessolutions",
+						"Assistance Accessolutions",
 						wx.YES|wx.NO | wx.CANCEL) !=wx.YES:
 			return
-		ui.message (u"Déconnexion")
 		remote.disconnect ()
 		return
-	if gui.messageBox(u"Voulez-vous vous connecter à l'assistance Accessolutions ?",
-		u"Assistance Accessolutions",
-		wx.YES|wx.NO | wx.CANCEL) !=wx.YES:
+	if gui.messageBox(u"Voulez-vous vous connecter à l'assistance Accessolutions ? Votre nom d'utilisateur et le nom de votre ordinateur seront transmis à l'opérateur.",
+		"Assistance Accessolutions",
+		wx.YES | wx.NO | wx.CANCEL
+	) != wx.YES:
 		return
-	randomKey = format ("%07d" % random.randrange (0, 9999999))
-	remote.connect_as_slave(("nvdaremote.accessolutions.fr", 80), randomKey)
-	session = remote.master_session or remote.slave_session
-	url = session.get_connection_info().get_url_to_connect()
-	winUser = os.getenv("username")
-	api.copyToClip(unicode(url))
-	nvdaRequests (url, winUser)
-	
-def nvdaRequests (url, userName):
-	api_url = "http://assistance.accessolutions.fr/api/v0.1/nvda-requests" 
-	nvda_remote_url = url
-	win_user_name = userName
-	
-	data = "{\"nvda_remote_url\": \"%s\", \"win_user_name\": \"%s\"}" % (
-		nvda_remote_url,
-		win_user_name
-		)
-	opener = urllib.FancyURLopener()
-	opener.addheader("Content-type", "application/json")
-	f = opener.open(api_url, data)
-	if f.code != 201:
-		raise Exception("HTTP return code %s" % f.code)
-	log.info (u"Demande d'assistance effectuée.")
+	res, msg = askRemote()
+	if res:
+		os.startfile(msg)
+	else:
+		gui.messageBox(msg, "Assistance Accessolutions - erreur", wx.OK | wx.ICON_ERROR)
