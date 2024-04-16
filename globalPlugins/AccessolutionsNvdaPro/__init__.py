@@ -89,6 +89,26 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			lambda evt: remoteRequests.runRemote(),
 			item
 		)
+		item = self.accessolutionsMenu.Append(
+			wx.ID_ANY,
+			"&Documentation",
+			"Ouvre la documentation d'AccessonNVDAPro"
+		)
+		gui.mainFrame.sysTrayIcon.Bind(
+			wx.EVT_MENU,
+			self.openDocumentation,
+			item
+		)
+		item = self.accessolutionsMenu.Append(
+			wx.ID_ANY,
+			"Site &web",
+			"Ouvre le site web d'Accessolutions"
+		)
+		gui.mainFrame.sysTrayIcon.Bind(
+			wx.EVT_MENU,
+			lambda evt: os.startfile("https://www.accessolutions.fr"),
+			item
+		)
 		self.submenu_item = gui.mainFrame.sysTrayIcon.menu.InsertMenu(
 			2,
 			wx.ID_ANY,
@@ -106,6 +126,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	def terminate(self):
 		self.removeMenu()
+
+	def openDocumentation(self, evt):
+		docPath = os.path.join(
+			os.path.dirname(__file__),
+			"../../doc/fr/readme.html"
+		)
+		os.startfile(docPath)
 
 	def script_runRemote(self, gesture):
 		wx.CallAfter(remoteRequests.runRemote)
