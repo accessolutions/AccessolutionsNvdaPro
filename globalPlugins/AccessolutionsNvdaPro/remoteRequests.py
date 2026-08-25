@@ -1,58 +1,82 @@
-# *-* coding: utf8 *-*
-# Version 2018.06.19
+# -*- coding: utf-8 -*-
 
-import globalPluginHandler
 import os
-import ui
+from urllib.parse import urlencode
+
+import addonHandler
 import gui
+import ui
 import wx
 from logHandler import log
-import api
-import speech
-import random
-import urllib
 
-def runRemote ():
-	remote = None
-	for g in globalPluginHandler.runningPlugins:
-		if hasattr (g, "connect_as_slave"):
-			remote = g
-			break
-	if remote is None:
-		ui.message (u"Le module NVDA Remote est introuvable")
-		return
-	if remote.is_connected ():
-		if gui.messageBox(u"Voulez-vous vous déconnecter ?",
-						u"Assistance Accessolutions",
-						wx.YES|wx.NO | wx.CANCEL) !=wx.YES:
+addonHandler.initTranslation()
+
+REMOTE_ENDPOINT = "nvdaremote://nvdaremote.accessolutions.fr/"
+
+
+def _ask_for_access_key():
+	dialog = wx.Dialog(
+		gui.mainFrame,
+		title=_("Assistance à distance Accessolutions"),
+	)
+	sizer = wx.BoxSizer(wx.VERTICAL)
+	label = wx.StaticText(
+		dialog,
+		label=_("Merci de saisir la clé d'accès du support Accessolutions :"),
+	)
+	sizer.Add(label, 0, wx.ALL, 10)
+	key_control = wx.TextCtrl(
+		dialog,
+		size=(400, -1),
+		style=wx.TE_PROCESS_ENTER,
+	)
+	key_control.SetName(_("Clé d'accès du support Accessolutions"))
+	sizer.Add(key_control, 0, wx.LEFT | wx.RIGHT | wx.EXPAND, 10)
+
+	button_sizer = wx.BoxSizer(wx.HORIZONTAL)
+	cancel_button = wx.Button(dialog, wx.ID_CANCEL, _("Annuler"))
+	ok_button = wx.Button(dialog, wx.ID_OK, _("OK"))
+	button_sizer.Add(cancel_button, 0, wx.ALL, 5)
+	button_sizer.Add(ok_button, 0, wx.ALL, 5)
+	sizer.Add(button_sizer, 0, wx.ALIGN_RIGHT | wx.ALL, 5)
+
+	def accept_key(event):
+		if not key_control.GetValue().strip():
+			ui.message(_("La clé d'accès est obligatoire."))
+			key_control.SetFocus()
 			return
-		ui.message (u"Déconnexion")
-		remote.disconnect ()
+		dialog.EndModal(wx.ID_OK)
+
+	ok_button.Bind(wx.EVT_BUTTON, accept_key)
+	key_control.Bind(wx.EVT_TEXT_ENTER, accept_key)
+	cancel_button.Bind(wx.EVT_BUTTON, lambda event: dialog.EndModal(wx.ID_CANCEL))
+	dialog.SetEscapeId(wx.ID_CANCEL)
+	ok_button.SetDefault()
+	dialog.SetSizerAndFit(sizer)
+	key_control.SetFocus()
+
+	gui.mainFrame.prePopup()
+	try:
+		with dialog:
+			if dialog.ShowModal() != wx.ID_OK:
+				return None
+			return key_control.GetValue().strip()
+	finally:
+		gui.mainFrame.postPopup()
+
+
+def _build_remote_url(access_key):
+	query = urlencode({"mode": "slave", "key": access_key})
+	return "%s?%s" % (REMOTE_ENDPOINT, query)
+
+
+def runRemote():
+	"""Demande la clé du support puis lance NVDA Remote."""
+	access_key = _ask_for_access_key()
+	if not access_key:
 		return
-	if gui.messageBox(u"Voulez-vous vous connecter à l'assistance Accessolutions ?",
-		u"Assistance Accessolutions",
-		wx.YES|wx.NO | wx.CANCEL) !=wx.YES:
-		return
-	randomKey = format ("%07d" % random.randrange (0, 9999999))
-	remote.connect_as_slave(("nvdaremote.accessolutions.fr", 80), randomKey)
-	session = remote.master_session or remote.slave_session
-	url = session.get_connection_info().get_url_to_connect()
-	winUser = os.getenv("username")
-	api.copyToClip(unicode(url))
-	nvdaRequests (url, winUser)
-	
-def nvdaRequests (url, userName):
-	api_url = "http://assistance.accessolutions.fr/api/v0.1/nvda-requests" 
-	nvda_remote_url = url
-	win_user_name = userName
-	
-	data = "{\"nvda_remote_url\": \"%s\", \"win_user_name\": \"%s\"}" % (
-		nvda_remote_url,
-		win_user_name
-		)
-	opener = urllib.FancyURLopener()
-	opener.addheader("Content-type", "application/json")
-	f = opener.open(api_url, data)
-	if f.code != 201:
-		raise Exception("HTTP return code %s" % f.code)
-	log.info (u"Demande d'assistance effectuée.")
+	try:
+		os.startfile(_build_remote_url(access_key))
+	except (AttributeError, OSError) as error:
+		log.exception("Impossible de lancer NVDA Remote")
+		ui.message(_("Impossible de lancer NVDA Remote : %s") % error)

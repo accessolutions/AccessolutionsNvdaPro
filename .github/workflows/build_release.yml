@@ -14,7 +14,38 @@ jobs:
 
     steps:
       - name: Check out source
-        uses: actions/checkout@v4
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+
+      - name: Install SCons
+        shell: bash
+        run: python -m pip install --disable-pip-version-check scons
+
+      - name: Validate Python sources
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import ast
+          from pathlib import Path
+
+          errors = []
+          for path in sorted(Path("appModules").rglob("*.py")) + sorted(Path("globalPlugins").rglob("*.py")):
+              try:
+                  tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+              except (OSError, SyntaxError) as error:
+                  errors.append(f"{path}: {error}")
+                  continue
+              for node in ast.walk(tree):
+                  if isinstance(node, ast.ExceptHandler) and node.type is None:
+                      errors.append(f"{path}:{node.lineno}: bare except is not allowed")
+
+          if errors:
+              raise SystemExit("\n".join(errors))
+          PY
+
+      - name: Run updater tests
+        shell: bash
+        run: python -m unittest discover --start-directory tests --pattern 'test_*.py' --verbose
 
       - name: Build add-on package
         shell: bash
@@ -26,28 +57,78 @@ jobs:
             exit 1
           fi
 
-          rm -rf package
-          mkdir package
-          cp manifest.ini package/manifest.ini
-          sed -E -i "s/^version = .*/version = $version/" package/manifest.ini
-          cp -R appModules package/appModules
-          cp -R globalPlugins package/globalPlugins
-          cp -R doc package/doc
-          find package -type d -name __pycache__ -prune -exec rm -rf {} +
-          find package -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete
-
           asset="AccessolutionsNVDAPro-${version}.nvda-addon"
-          (cd package && zip -qr "../$asset" manifest.ini appModules globalPlugins doc)
-          sha256sum "$asset" | awk '{print $1}' > "$asset.sha256"
-          echo "Built $asset"
+          scons -Q "version=$version"
+          test -f "package/$asset"
+          test -f "package/$asset.sha256"
+          (cd package && sha256sum -c "$asset.sha256")
+
+
+      - name: Verify add-on package
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          asset="AccessolutionsNVDAPro-${version}.nvda-addon"
+          python - "package/$asset" "$version" <<'PY'
+          import re
+          import sys
+          import zipfile
+
+          asset, expected_version = sys.argv[1:]
+          required = {
+              "manifest.ini",
+              "appModules/notepad.py",
+              "appModules/obu.py",
+              "globalPlugins/AccessolutionsNvdaPro/__init__.py",
+              "globalPlugins/AccessolutionsNvdaPro/updater.py",
+              "doc/fr/readme.html",
+              "doc/en/readme.html",
+              "locale/fr/LC_MESSAGES/nvda.mo",
+              "locale/en/LC_MESSAGES/nvda.mo",
+          }
+          with zipfile.ZipFile(asset) as package:
+              names = set(package.namelist())
+              missing = required - names
+              if missing:
+                  raise SystemExit(f"Missing package entries: {sorted(missing)}")
+              forbidden = [
+                  name for name in names
+                  if "__pycache__" in name
+                  or name.endswith((".pyc", ".pyo", ".po"))
+              ]
+              if forbidden:
+                  raise SystemExit(f"Forbidden generated files: {sorted(forbidden)}")
+              unexpected = [
+                  name for name in names
+                  if name != "manifest.ini"
+                  and not name.startswith(
+                      ("appModules/", "globalPlugins/", "doc/", "locale/")
+                  )
+              ]
+              if unexpected:
+                  raise SystemExit(f"Unexpected package entries: {sorted(unexpected)}")
+              manifest = package.read("manifest.ini").decode("utf-8")
+
+          def value(key):
+              match = re.search(rf"^\s*{key}\s*=\s*(.*?)\s*$", manifest, re.MULTILINE)
+              return match.group(1).strip().strip("\"'") if match else None
+
+          if value("name") != "AccessolutionsNVDAPro":
+              raise SystemExit("Invalid add-on name in manifest")
+          if value("version") != expected_version:
+              raise SystemExit(
+                  f"Manifest version {value('version')!r} does not match {expected_version!r}"
+              )
+          PY
 
       - name: Upload add-on artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: accessolutions-nvda-pro-package
           path: |
-            AccessolutionsNVDAPro-*.nvda-addon
-            AccessolutionsNVDAPro-*.nvda-addon.sha256
+            package/AccessolutionsNVDAPro-*.nvda-addon
+            package/AccessolutionsNVDAPro-*.nvda-addon.sha256
           if-no-files-found: error
 
   release:
@@ -56,13 +137,13 @@ jobs:
 
     steps:
       - name: Download add-on artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           name: accessolutions-nvda-pro-package
           path: release
 
       - name: Publish GitHub release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
         with:
           tag_name: ${{ github.ref_name }}
           name: Accessolutions NVDA Pro ${{ github.ref_name }}

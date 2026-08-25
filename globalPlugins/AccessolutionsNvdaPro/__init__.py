@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+
 import globalPluginHandler
 import os
 import ui
@@ -7,13 +9,13 @@ import inputCore
 import config
 import core
 import speech
-import queueHandler
 import wx
 import gui
 import globalVars
 from . import remoteRequests
 from . import updater
 import addonHandler
+from scriptHandler import script
 addonHandler.initTranslation()
 
 confSpecs = {
@@ -22,18 +24,63 @@ confSpecs = {
 }
 config.conf.spec["AccessolutionsNVDAPro"] = confSpecs
 
+
+# Associations ajoutées par gestures.ini. Elles sont retirées avant chaque
+# chargement afin d'éviter les doublons dans la carte globale de NVDA.
+_NAV_GESTURE_MAPPINGS = (
+	("cursorManager", "CursorManager", "findPrevious", "kb:shift+f3"),
+	("cursorManager", "CursorManager", "find", "kb:control+f"),
+	("cursorManager", "CursorManager", "findNext", "kb:f3"),
+	("browseMode", "BrowseModeTreeInterceptor", "refreshBuffer", "kb:nvda+escape"),
+	("browseMode", "BrowseModeTreeInterceptor", "moveToStartOfContainer", "kb:q+shift"),
+	("browseMode", "BrowseModeTreeInterceptor", "previousTable", "kb:y+shift"),
+	("browseMode", "BrowseModeTreeInterceptor", "previousHeading", "kb:shift+t"),
+	("browseMode", "BrowseModeTreeInterceptor", "previousButton", "kb:shift+u"),
+	("browseMode", "BrowseModeTreeInterceptor", "previousComboBox", "kb:shift+z"),
+	("browseMode", "BrowseModeTreeInterceptor", "previousNotLinkBlock", "kb:shift+b"),
+	("browseMode", "BrowseModeTreeInterceptor", "previousBlockQuote", "kb:shift+c"),
+	("browseMode", "BrowseModeTreeInterceptor", "previousFrame", "kb:shift+h"),
+	("browseMode", "BrowseModeTreeInterceptor", "previousUnvisitedLink", "kb:shift+n"),
+	("browseMode", "BrowseModeTreeInterceptor", "nextTable", "kb:y"),
+	("browseMode", "BrowseModeTreeInterceptor", "nextComboBox", "kb:z"),
+	("browseMode", "BrowseModeTreeInterceptor", "nextButton", "kb:u"),
+	("browseMode", "BrowseModeTreeInterceptor", "nextHeading", "kb:t"),
+	("browseMode", "BrowseModeTreeInterceptor", "movePastEndOfContainer", "kb:q"),
+	("browseMode", "BrowseModeTreeInterceptor", "nextUnvisitedLink", "kb:n"),
+	("browseMode", "BrowseModeTreeInterceptor", "nextFrame", "kb:h"),
+	("browseMode", "BrowseModeTreeInterceptor", "nextBlockQuote", "kb:c"),
+	("browseMode", "BrowseModeTreeInterceptor", "nextNotLinkBlock", "kb:b"),
+)
+
+
+def _navGesturesPath():
+	return os.path.abspath(os.path.join(
+		os.path.dirname(__file__), "gestures.ini"
+	))
+
+
+def unloadNavGestures():
+	"""Retire toutes les associations de navigation de cette extension."""
+	gestureMap = inputCore.manager.localeGestureMap
+	for moduleName, className, scriptName, gesture in _NAV_GESTURE_MAPPINGS:
+		while True:
+			try:
+				gestureMap.remove(gesture, moduleName, className, scriptName)
+			except ValueError:
+				break
+
+
 def loadNavGestures():
-	inputCore.manager.localeGestureMap.load(
-		os.path.abspath(os.path.join(
-			os.path.dirname(__file__), "gestures.ini")
-		)
-	)
+	unloadNavGestures()
+	inputCore.manager.localeGestureMap.load(_navGesturesPath())
 
 class SettingsDlg(gui.settingsDialogs.SettingsPanel):
 
-	title = "AccessolutionsNVDAPro"
+	title = _("AccessolutionsNVDAPro")
 
 	def makeSettings(self, settingsSizer):
+		self._saveCompleted = False
+		self.newVal = None
 		sHelper = gui.guiHelper.BoxSizerHelper(self, sizer=settingsSizer)
 		self.useFrenchNavGestures = sHelper.addItem(wx.CheckBox(
 			self,
@@ -51,26 +98,24 @@ class SettingsDlg(gui.settingsDialogs.SettingsPanel):
 		)
 
 	def onSave(self):
-		self.restartRequired = False
+		self._saveCompleted = False
 		self.oldVal = config.conf["AccessolutionsNVDAPro"]["useFrenchNavGestures"]
 		self.newVal = self.useFrenchNavGestures.GetValue()
 		config.conf["AccessolutionsNVDAPro"]["useFrenchNavGestures"] = self.newVal
 		config.conf["AccessolutionsNVDAPro"]["checkForUpdatesAtStartup"] = self.checkForUpdatesAtStartup.GetValue()
 		if self.newVal == self.oldVal:
+			self._saveCompleted = True
 			return
-		self.restartRequired = not self.newVal
+		self._saveCompleted = True
 
 	def postSave(self):
+		if not getattr(self, "_saveCompleted", False):
+			return
+		self._saveCompleted = False
 		if self.newVal:
 			loadNavGestures()
-		if self.restartRequired:
-			res = gui.messageBox(
-				_("Vous devez redémarrer NVDA pour que les changements prennent effet. Voulez-vous redémarrer maintenant?"),
-				_("AccessolutionsNVDAPro"),
-				style=wx.YES_NO | wx.ICON_QUESTION
-			)
-			if res == wx.YES:
-				queueHandler.queueFunction(queueHandler.eventQueue,core.restart)
+		else:
+			unloadNavGestures()
 
 
 class GlobalPlugin(globalPluginHandler.GlobalPlugin):
@@ -83,6 +128,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self._startup_update_checked = False
 		self._terminated = False
 		self._startup_update_registered = False
+		self._startup_fallback_timer = None
+		self._startup_update_timer = None
+		self.remote_item = None
+		self.update_item = None
+		self.submenu_item = None
+		self._remote_menu_handler = None
+		self._update_menu_handler = None
 		self.createMenu()
 		gui.settingsDialogs.NVDASettingsDialog.categoryClasses.append(
 			SettingsDlg
@@ -94,57 +146,111 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			self._startup_update_registered = True
 		except AttributeError:
 			# Fallback for NVDA versions without the post-startup extension point.
-			wx.CallLater(10000, self.postStartupHandler)
+			self._startup_fallback_timer = wx.CallLater(10000, self.postStartupHandler)
 
 	def createMenu(self):
 		self.accessolutionsMenu = wx.Menu()
-		item = self.accessolutionsMenu.Append(
+		self.remote_item = self.accessolutionsMenu.Append(
 			wx.ID_ANY,
-			"&Assistance à distance",
-			"Effectue une ddemande d'assistance pour une prise de contrôle de l'ordinateur à distance par un technicien Accessolutions"
+			_("&Assistance à distance"),
+			_("Effectue une demande d'assistance pour une prise de contrôle de l'ordinateur à distance par un technicien Accessolutions")
 		)
+		self._remote_menu_handler = self._on_remote_menu
 		gui.mainFrame.sysTrayIcon.Bind(
 			wx.EVT_MENU,
-			lambda evt: remoteRequests.runRemote(),
-			item
+			self._remote_menu_handler,
+			self.remote_item
 		)
 		self.update_item = self.accessolutionsMenu.Append(
 			wx.ID_ANY,
 			_("Vérifier les mises à jour..."),
 			_("Rechercher une nouvelle version d'Accessolutions NVDA Pro")
 		)
+		self._update_menu_handler = self._on_update_menu
 		gui.mainFrame.sysTrayIcon.Bind(
 			wx.EVT_MENU,
-			lambda evt: self._start_update_check(manual=True),
-			self.update_item
+			self._update_menu_handler,
+			self.update_item,
 		)
 		self.submenu_item = gui.mainFrame.sysTrayIcon.menu.InsertMenu(
 			2,
 			wx.ID_ANY,
-			"&Accessolutions",
+			_("&Accessolutions"),
 			self.accessolutionsMenu
 		)
 
+	def _on_remote_menu(self, event):
+		if not self._terminated:
+			remoteRequests.runRemote()
+
+	def _on_update_menu(self, event):
+		if not self._terminated:
+			self._start_update_check(manual=True)
+
 	def removeMenu(self):
+		self._stop_timer("_startup_fallback_timer")
+		self._stop_timer("_startup_update_timer")
 		if self._startup_update_registered:
 			try:
 				core.postNvdaStartup.unregister(self.postStartupHandler)
 			except (AttributeError, ValueError):
 				pass
 			self._startup_update_registered = False
-		gui.settingsDialogs.NVDASettingsDialog.categoryClasses.remove(
-			SettingsDlg
-		)
+		try:
+			gui.settingsDialogs.NVDASettingsDialog.categoryClasses.remove(SettingsDlg)
+		except ValueError:
+			pass
+		tray = getattr(gui.mainFrame, "sysTrayIcon", None)
+		if tray is not None:
+			for item, handler in (
+				(self.remote_item, self._remote_menu_handler),
+				(self.update_item, self._update_menu_handler),
+			):
+				if item is None or handler is None:
+					continue
+				try:
+					tray.Unbind(wx.EVT_MENU, handler=handler, source=item)
+				except (AttributeError, TypeError):
+					pass
 		if self.submenu_item is not None:
-			gui.mainFrame.sysTrayIcon.menu.RemoveItem(self.submenu_item)
-			self.submenu_item.Destroy()
+			if tray is not None:
+				try:
+					tray.menu.RemoveItem(self.submenu_item)
+				except (AttributeError, RuntimeError):
+					pass
+			try:
+				self.submenu_item.Destroy()
+			except (AttributeError, RuntimeError):
+				pass
+			self.submenu_item = None
+		self.remote_item = None
+		self.update_item = None
+		self._remote_menu_handler = None
+		self._update_menu_handler = None
+
+	def _stop_timer(self, attribute):
+		timer = getattr(self, attribute, None)
+		if timer is None:
+			return
+		try:
+			timer.Stop()
+		except (AttributeError, RuntimeError):
+			pass
+		setattr(self, attribute, None)
 
 	def terminate(self):
+		if self._terminated:
+			return
 		self._terminated = True
+		self._stop_timer("_startup_fallback_timer")
+		self._stop_timer("_startup_update_timer")
 		self.update_manager.terminate()
 		self.removeMenu()
+		unloadNavGestures()
+		super(GlobalPlugin, self).terminate()
 
 	def postStartupHandler(self):
+		self._startup_fallback_timer = None
 		if self._terminated or self._startup_update_checked:
 			return
 		self._startup_update_checked = True
@@ -153,7 +259,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not config.conf["AccessolutionsNVDAPro"]["checkForUpdatesAtStartup"]:
 			return
 		# Let NVDA finish loading its add-ons and its GUI before starting network I/O.
-		wx.CallLater(5000, self._start_update_check, False)
+		self._startup_update_timer = wx.CallLater(
+			5000, self._run_startup_update_check
+		)
+
+	def _run_startup_update_check(self):
+		self._startup_update_timer = None
+		self._start_update_check(manual=False)
 
 	def _current_addon_version(self):
 		try:
@@ -212,7 +324,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		) != wx.YES:
 			return
 		self.update_item.Enable(False)
-		if not self.update_manager.download_async(update, self._on_update_download_finished):
+		if not self.update_manager.download_async(
+			update,
+			lambda path, error: self._on_update_download_finished(update, path, error),
+		):
 			self.update_item.Enable(True)
 			gui.messageBox(
 				_("Une autre opération de mise à jour est déjà en cours."),
@@ -220,10 +335,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				wx.OK | wx.ICON_INFORMATION,
 			)
 
-	def _on_update_download_finished(self, path, error):
-		wx.CallAfter(self._handle_update_download_finished, path, error)
+	def _on_update_download_finished(self, update, path, error):
+		wx.CallAfter(self._handle_update_download_finished, update, path, error)
 
-	def _handle_update_download_finished(self, path, error):
+	def _handle_update_download_finished(self, update, path, error):
 		if self._terminated:
 			if path:
 				updater.remove_temporary_file(path)
@@ -237,7 +352,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			)
 			return
 		try:
-			updater.install_package(path)
+			updater.install_package(path, expected_version=update.version)
 		except Exception as error:
 			gui.messageBox(
 				_("NVDA n'a pas pu installer la mise à jour.\n\n{error}").format(error=error),
@@ -255,10 +370,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			if path:
 				updater.remove_temporary_file(path)
 
+	@script(
+		description=_("Demande une assistance à distance Accessolutions"),
+		gesture="kb:windows+control+r",
+	)
 	def script_runRemote(self, gesture):
 		wx.CallAfter(remoteRequests.runRemote)
-	script_runRemote.__doc__ = _("Demande d'assistance à distance Accessolutions")
-
-	__gestures = {
-		"kb:windows+control+r": "runRemote",
-	}

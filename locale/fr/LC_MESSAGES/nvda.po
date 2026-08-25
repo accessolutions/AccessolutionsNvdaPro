@@ -1,0 +1,265 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Accessolutions NVDA Pro\n"
+"Language: fr\n"
+"PO-Revision-Date: 2026-08-26 00:00+0000\n"
+"Last-Translator: Accessolutions <contact@accessolutions.fr>\n"
+"Language-Team: French\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "%s introuvable"
+msgstr "%s introuvable"
+
+msgid "&Accessolutions"
+msgstr "&Accessolutions"
+
+msgid "&Assistance à distance"
+msgstr "&Assistance à distance"
+
+msgid "Accessolutions"
+msgstr "Accessolutions"
+
+msgid "Accessolutions NVDA Pro est à jour."
+msgstr "Accessolutions NVDA Pro est à jour."
+
+msgid "AccessolutionsNVDAPro"
+msgstr "AccessolutionsNVDAPro"
+
+msgid "Active ou désactive la lecture du numéro de curseur de routage"
+msgstr "Active ou désactive la lecture du numéro de curseur de routage"
+
+msgid "Activer ou désactiver la journalisation de débogage temporaire."
+msgstr "Activer ou désactiver la journalisation de débogage temporaire."
+
+msgid "Adresse %s invalide : %s"
+msgstr "Adresse %s invalide : %s"
+
+msgid "Adresse %s non sûre : %s"
+msgstr "Adresse %s non sûre : %s"
+
+msgid "Annonce du numéro de curseur de routage"
+msgstr "Annonce du numéro de curseur de routage"
+
+msgid "Annuler"
+msgstr "Annuler"
+
+msgid "Assistance à distance Accessolutions"
+msgstr "Assistance à distance Accessolutions"
+
+msgid "Bascule entre braille intégral et braille abrégé"
+msgstr "Bascule entre braille intégral et braille abrégé"
+
+msgid "Bloc-notes"
+msgstr "Bloc-notes"
+
+msgid "Braille"
+msgstr "Braille"
+
+msgid "Braille abrégé"
+msgstr "Braille abrégé"
+
+msgid "Braille intégral"
+msgstr "Braille intégral"
+
+msgid "Cette version de NVDA ne fournit pas d'API d'installation d'extension"
+msgstr "Cette version de NVDA ne fournit pas d'API d'installation d'extension"
+
+msgid "Clé d'accès du support Accessolutions"
+msgstr "Clé d'accès du support Accessolutions"
+
+msgid "Demande une assistance à distance Accessolutions"
+msgstr "Demande une assistance à distance Accessolutions"
+
+msgid "Domaine %s non autorisé pour une mise à jour : %s"
+msgstr "Domaine %s non autorisé pour une mise à jour : %s"
+
+msgid "Effectue une demande d'assistance pour une prise de contrôle de l'ordinateur à distance par un technicien Accessolutions"
+msgstr "Effectue une demande d'assistance pour une prise de contrôle de l'ordinateur à distance par un technicien Accessolutions"
+
+msgid "En mode navigation, utiliser des raccourcis similaires à JAWS"
+msgstr "En mode navigation, utiliser des raccourcis similaires à JAWS"
+
+msgid "GitHub a renvoyé une liste de releases invalide"
+msgstr "GitHub a renvoyé une liste de releases invalide"
+
+msgid "Impossible de démarrer la recherche pendant une autre capture clavier."
+msgstr "Impossible de démarrer la recherche pendant une autre capture clavier."
+
+msgid "Impossible de lancer NVDA Remote : %s"
+msgstr "Impossible de lancer NVDA Remote : %s"
+
+msgid ""
+"Impossible de rechercher les mises à jour.\n"
+"\n"
+"{error}"
+msgstr ""
+"Impossible de rechercher les mises à jour.\n"
+"\n"
+"{error}"
+
+msgid "Impossible de récupérer %s : %s"
+msgstr "Impossible de récupérer %s : %s"
+
+msgid ""
+"Impossible de télécharger ou de vérifier la mise à jour.\n"
+"\n"
+"{error}"
+msgstr ""
+"Impossible de télécharger ou de vérifier la mise à jour.\n"
+"\n"
+"{error}"
+
+msgid "Impossible d’inspecter le geste du Bloc-notes"
+msgstr "Impossible d’inspecter le geste du Bloc-notes"
+
+msgid "Impossible d’ouvrir l’installateur de NVDA : %s"
+msgstr "Impossible d’ouvrir l’installateur de NVDA : %s"
+
+msgid "Incohérence de version : le paquet contient %s au lieu de %s"
+msgstr "Incohérence de version : le paquet contient %s au lieu de %s"
+
+msgid "Journalisation de débogage activée temporairement."
+msgstr "Journalisation de débogage activée temporairement."
+
+msgid "Journalisation de débogage désactivée."
+msgstr "Journalisation de débogage désactivée."
+
+msgid "L'empreinte SHA-256 publiée est invalide"
+msgstr "L'empreinte SHA-256 publiée est invalide"
+
+msgid "L'empreinte SHA-256 du module téléchargé est incorrecte"
+msgstr "L'empreinte SHA-256 du module téléchargé est incorrecte"
+
+msgid "L'installation est désactivée en mode sécurisé"
+msgstr "L'installation est désactivée en mode sécurisé"
+
+msgid "La clé d'accès est obligatoire."
+msgstr "La clé d'accès est obligatoire."
+
+msgid "La journalisation de NVDA est contrôlée par les options de démarrage."
+msgstr "La journalisation de NVDA est contrôlée par les options de démarrage."
+
+msgid "La mise à jour est installée. NVDA doit être redémarré pour terminer l'installation. Redémarrer maintenant ?"
+msgstr "La mise à jour est installée. NVDA doit être redémarré pour terminer l'installation. Redémarrer maintenant ?"
+
+msgid "La recherche incrémentale est disponible uniquement dans un document web prêt."
+msgstr "La recherche incrémentale est disponible uniquement dans un document web prêt."
+
+msgid "La recherche incrémentale n'est pas disponible actuellement."
+msgstr "La recherche incrémentale n'est pas disponible actuellement."
+
+msgid "La release ne contient aucun module NVDA"
+msgstr "La release ne contient aucun module NVDA"
+
+msgid "La release ne publie pas d'empreinte SHA-256"
+msgstr "La release ne publie pas d'empreinte SHA-256"
+
+msgid "La réponse reçue est trop volumineuse"
+msgstr "La réponse reçue est trop volumineuse"
+
+msgid "Lance une recherche incrémentale virtuelle dans un document web."
+msgstr "Lance une recherche incrémentale virtuelle dans un document web."
+
+msgid "Le manifeste du paquet est incomplet."
+msgstr "Le manifeste du paquet est incomplet."
+
+msgid "Le manifeste du paquet ne contient pas de version"
+msgstr "Le manifeste du paquet ne contient pas de version"
+
+msgid "Le paquet ne contient pas un manifeste unique."
+msgstr "Le paquet ne contient pas un manifeste unique."
+
+msgid "Le paquet téléchargé est invalide : %s"
+msgstr "Le paquet téléchargé est invalide : %s"
+
+msgid "Le paquet téléchargé ne correspond pas à Accessolutions NVDA Pro"
+msgstr "Le paquet téléchargé ne correspond pas à Accessolutions NVDA Pro"
+
+msgid "Le paquet de mise à jour est introuvable"
+msgstr "Le paquet de mise à jour est introuvable"
+
+msgid "Le paquet de mise à jour est trop volumineux"
+msgstr "Le paquet de mise à jour est trop volumineux"
+
+msgid "Lecture des curseurs de routage activée"
+msgstr "Lecture des curseurs de routage activée"
+
+msgid "Lecture des curseurs de routage désactivée"
+msgstr "Lecture des curseurs de routage désactivée"
+
+msgid "Les mises à jour sont désactivées en mode sécurisé"
+msgstr "Les mises à jour sont désactivées en mode sécurisé"
+
+msgid "L’opération de mise à jour a été annulée."
+msgstr "L’opération de mise à jour a été annulée."
+
+msgid "Merci de saisir la clé d'accès du support Accessolutions :"
+msgstr "Merci de saisir la clé d'accès du support Accessolutions :"
+
+msgid "Mise à jour d'Accessolutions NVDA Pro"
+msgstr "Mise à jour d'Accessolutions NVDA Pro"
+
+msgid ""
+"NVDA n'a pas pu installer la mise à jour.\n"
+"\n"
+"{error}"
+msgstr ""
+"NVDA n'a pas pu installer la mise à jour.\n"
+"\n"
+"{error}"
+
+msgid "OK"
+msgstr "OK"
+
+msgid "Ouvre la liste des éléments du document courant"
+msgstr "Ouvre la liste des éléments du document courant"
+
+msgid "Ouvre l’installateur officiel de NVDA (pas celui de l’extension)."
+msgstr "Ouvre l’installateur officiel de NVDA (pas celui de l’extension)."
+
+msgid "Recherche annulée."
+msgstr "Recherche annulée."
+
+msgid "Recherche incrémentale activée."
+msgstr "Recherche incrémentale activée."
+
+msgid "Rechercher automatiquement les mises à jour au démarrage de NVDA"
+msgstr "Rechercher automatiquement les mises à jour au démarrage de NVDA"
+
+msgid "Rechercher une nouvelle version d'Accessolutions NVDA Pro"
+msgstr "Rechercher une nouvelle version d'Accessolutions NVDA Pro"
+
+msgid "Réponse GitHub invalide : %s"
+msgstr "Réponse GitHub invalide : %s"
+
+msgid "Seules les adresses HTTPS sont acceptées : %s"
+msgstr "Seules les adresses HTTPS sont acceptées : %s"
+
+msgid "Table braille inconnue"
+msgstr "Table braille inconnue"
+
+msgid "Trop de redirections lors de la récupération de %s"
+msgstr "Trop de redirections lors de la récupération de %s"
+
+msgid "Une autre opération de mise à jour est déjà en cours."
+msgstr "Une autre opération de mise à jour est déjà en cours."
+
+msgid "Une erreur est survenue pendant la recherche."
+msgstr "Une erreur est survenue pendant la recherche."
+
+msgid ""
+"Une mise à jour d'Accessolutions NVDA Pro est disponible : version {version}.\n"
+"\n"
+"Voulez-vous la télécharger et l'installer maintenant ?"
+msgstr ""
+"Une mise à jour d'Accessolutions NVDA Pro est disponible : version {version}.\n"
+"\n"
+"Voulez-vous la télécharger et l'installer maintenant ?"
+
+msgid "Une vérification des mises à jour est déjà en cours."
+msgstr "Une vérification des mises à jour est déjà en cours."
+
+msgid "Vérifier les mises à jour..."
+msgstr "Vérifier les mises à jour..."

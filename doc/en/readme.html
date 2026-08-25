@@ -12,12 +12,11 @@
   </header>
 
   <main>
-    <p><strong>Add-on version:</strong> 2026.08.25.0001</p>
+    <p><strong>Add-on version:</strong> 2026.08.26.0001</p>
     <p>
       Accessolutions NVDA Pro adds features to NVDA, including web browsing
       gestures inspired by JAWS. It also provides incremental search, braille
       tools, a remote assistance request, and application-specific adaptations
-      for Windows software.
     </p>
 
     <nav aria-label="Table of contents">
@@ -40,9 +39,9 @@
     <ul>
       <li>Windows and NVDA are required.</li>
       <li>
-        The manifest declares a minimum NVDA version of 2018.2.1 and a last
-        tested version of 2026.4.0. These values are declarations and do not
-        guarantee operation on every NVDA release.
+        The manifest targets NVDA 2026.1.0 or later and declares that version
+        as the last tested version. These values do not guarantee operation on
+        every NVDA release; perform a real-NVDA test before each publication.
       </li>
       <li>
         Remote assistance requires the NVDA Remote add-on to be installed and
@@ -50,9 +49,8 @@
       </li>
     </ul>
     <p>
-      Some code uses legacy NVDA APIs and Python 2-specific calls. Test the
-      add-on with the exact NVDA version used in production before deploying it
-      to multiple computers.
+      The add-on uses Python 3 networking APIs. Test it with the exact NVDA
+      version used in production before deploying it to multiple computers.
     </p>
 
     <h2 id="installation">Installation and preferences</h2>
@@ -67,9 +65,9 @@
     </ol>
     <p>
       <strong>Use JAWS-like gestures in browse mode</strong> is enabled by
-      default. When it is disabled, NVDA's standard web gestures are used after
-      NVDA is restarted. When it is enabled, the Accessolutions gesture map is
-      loaded immediately after saving the setting.
+      default. When it is enabled, the Accessolutions gesture map is loaded
+      immediately after saving the setting. When it is disabled, NVDA's
+      standard web gestures are used.
     </p>
     <p>
       Gestures may conflict with NVDA, the browser, or another add-on. The
@@ -135,36 +133,39 @@
       </tbody>
     </table>
     <p>
-      The keys <kbd>M</kbd>, <kbd>Shift+M</kbd>, <kbd>,</kbd>, and
-      <kbd>Shift+,</kbd> are also present in the gesture map, but the module
-      does not document a navigation target for them.
+      Other NVDA shortcuts are not disabled by this map. The Accessolutions
+      gestures remain optional and may conflict with a custom gesture map or
+      another add-on; disable them in Settings if a conflict occurs.
     </p>
 
     <h2 id="search">Incremental search</h2>
     <p>
-      Incremental search finds text in a web document without opening the usual
-      search dialog.
+      Incremental search finds text in a web document without opening a window.
+      It is entirely virtual: text is entered directly from the keyboard and no
+      key is sent to the web page.
     </p>
     <ol>
       <li>Place focus in a web document in browse mode.</li>
       <li>Press <kbd>Ctrl+I</kbd>.</li>
-      <li>Type all or part of the text to find.</li>
+      <li>Type all or part of the text to find, as quickly as needed.</li>
       <li>
-        After a short pause, the add-on searches from the beginning of the
-        document, selects the first match, and reads its line.
+        After each character, the add-on searches from the beginning of the
+        document, moves the virtual cursor to the first match, and reads its
+        line.
       </li>
     </ol>
     <p>
-      The search stops automatically after a period of inactivity. If no
-      characters were entered, NVDA announces that the search was cancelled. If
-      no match is found, NVDA announces that the text could not be found.
+      Previous speech is cancelled before the new result is announced. The
+      search stops automatically after four seconds of inactivity. If no
+      characters were entered, NVDA announces that the search was cancelled.
+      If no match is found, NVDA announces that the text was not found.
     </p>
     <p>
-      This feature temporarily captures keyboard input. <kbd>Tab</kbd>,
-      <kbd>Shift+Tab</kbd>, <kbd>Escape</kbd>, and <kbd>Enter</kbd> are not
-      handled reliably by the current implementation. Use this command only in
-      a web document and restart NVDA if keyboard capture appears to remain
-      active.
+      This feature temporarily captures keyboard input. <kbd>Backspace</kbd>
+      removes the last character, <kbd>Escape</kbd> cancels the search, and
+      <kbd>Enter</kbd> completes it. <kbd>Tab</kbd> and <kbd>Shift+Tab</kbd>
+      complete the search and are then passed to NVDA. The capture is also
+      released automatically after inactivity.
     </p>
 
     <h2 id="braille">Braille</h2>
@@ -194,26 +195,31 @@
         </tr>
         <tr>
           <td><kbd>Win+Ctrl+Shift+D</kbd></td>
-          <td>Toggles NVDA's internal test-mode flag.</td>
+          <td>Temporarily enables or disables NVDA debug logging.</td>
           <td>All applications</td>
         </tr>
         <tr>
           <td><kbd>NVDA+F7</kbd></td>
-          <td>Passes F7 to the current document's tree interceptor when possible.</td>
-          <td>Document with a tree interceptor</td>
+          <td>NVDA's standard command: opens the current document's Elements List. An additional compatibility fallback is enabled only on older NVDA versions that do not make it available in focus mode.</td>
+          <td>Document in browse or focus mode</td>
         </tr>
       </tbody>
     </table>
     <p>
-      Test mode is an internal diagnostic feature. Do not enable it unless you
-      understand its effect on the NVDA version in use.
+      The first press enables NVDA's <code>DEBUG</code> logging level. The
+      second press restores the previous level. This level is temporary and is
+      not saved by the add-on; it is also restored when the add-on is disabled.
+    </p>
+    <p>
+      Debug logs may contain sensitive information, including keyboard input,
+      spoken text, or entered data. Use this mode only for diagnostics and
+      disable it as soon as possible.
     </p>
 
     <h2 id="remote">Remote assistance</h2>
     <p>
-      The assistance command connects NVDA Remote as a slave to the
-      Accessolutions server and sends connection information to the assistance
-      service.
+      The assistance command opens NVDA Remote in slave mode toward the
+      Accessolutions server and requests the access key supplied by support.
     </p>
     <h3>Procedure</h3>
     <ol>
@@ -222,28 +228,22 @@
         Press <kbd>Win+Ctrl+R</kbd>, or open the system menu
         <strong>Accessolutions &gt; Remote assistance</strong>.
       </li>
-      <li>Confirm the connection request.</li>
       <li>
-        A session key is generated. The connection URL is copied to the
-        clipboard and sent to the Accessolutions service together with the
-        current Windows account name.
-      </li>
-      <li>
-        To end an existing session, use the same shortcut and confirm
-        disconnection.
+        In the dialog, enter the access key supplied by Accessolutions support.
+        Choose <strong>OK</strong> to launch NVDA Remote, or choose
+        <strong>Cancel</strong> to abort.
       </li>
     </ol>
     <p>
-      If NVDA Remote is not installed or is not loaded, the add-on announces
-      that the module cannot be found.
+      The add-on does not store the key. To end the session, use the disconnect
+      command provided by NVDA Remote.
     </p>
     <p>
-      <strong>Privacy and security:</strong> the current code uses port 80 for
-      the NVDA Remote connection, and the assistance request URL uses HTTP.
-      The session URL and Windows user name are therefore sent to an external
-      service without visible HTTPS protection in this code. Check your
-      organization's security policy before using this feature on a sensitive
-      computer.
+      <strong>Privacy and security:</strong> the add-on passes the entered key
+      only to NVDA Remote's <code>nvdaremote://</code> protocol handler. The key
+      is not stored by the add-on. Share it only with Accessolutions support,
+      and check your organization's security policy before using this feature on
+      a sensitive computer.
     </p>
 
     <h2 id="applications">Application-specific behavior</h2>
@@ -258,23 +258,24 @@
     <h3>OpenBook</h3>
     <p>
       When the OpenBook window receives focus, NVDA speech is cancelled and the
-      speech mode is turned off. When OpenBook loses focus, the speech mode is
-      set back to "talk" mode. This can override the speech behavior expected by the user
-      while OpenBook is active.
+      speech mode is turned off. When OpenBook loses focus, the speech mode that
+      was active before entering the application is restored. This preserves
+      the user's speech setting after using OpenBook.
     </p>
 
     <h3>Firefox and WebAccess</h3>
     <p>
-      The add-on applies an internal patch to Firefox's Gecko virtual buffer to
-      improve accessible-object membership checks. This workaround depends on
-      private NVDA and Firefox APIs and may become incompatible after an update.
+      The add-on no longer modifies Firefox's Gecko virtual buffer. The
+      Elements List and its behavior in focus mode are handled by NVDA itself,
+      avoiding a global replacement of an internal method and reducing the risk
+      of regressions after updates.
     </p>
 
     <h3>NVDA installation</h3>
     <p>
-      <kbd>Win+Ctrl+I</kbd> opens an old NVDA installation interface contained in
-      the module. This gesture does not install the Accessolutions NVDA Pro
-      add-on itself. Use NVDA's Add-ons Manager to install the add-on.
+      <kbd>Win+Ctrl+I</kbd> opens NVDA's official installer. This gesture does
+      not install the Accessolutions NVDA Pro add-on itself. Use NVDA's Add-ons
+      Manager to install the add-on.
     </p>
 
     <h2 id="troubleshooting">Troubleshooting</h2>
@@ -299,13 +300,14 @@
       </li>
       <li>
         <strong>The keyboard appears captured after Ctrl+I:</strong> wait for
-        the timeout or restart NVDA, then inspect the NVDA log for an
+        the timeout, press <kbd>Escape</kbd> to cancel the search, or restart
+        NVDA as a last resort. Then inspect the NVDA log for an
         incremental-search error.
       </li>
     </ul>
 
     <h2 id="limitations">Known limitations and technical review</h2>
-    <p>The following points were found in the documented version:</p>
+    <p>The following points remain relevant:</p>
     <ul>
       <li>
         the update system depends on the configured public GitHub repository
@@ -316,24 +318,21 @@
         restart are required;
       </li>
       <li>
-        <code>urllib.FancyURLopener</code>, <code>urllib.urlretrieve</code>, and
-        <code>unicode</code> are Python 2-era calls and may fail with Python 3;
+        incremental search still relies on private NVDA attributes and should be
+        tested against the targeted NVDA releases;
       </li>
       <li>
-        incremental search relies on private NVDA attributes and contains
-        processing branches after a return statement, making those branches
-        unreachable;
+        compatibility of the Elements List with older NVDA versions still needs
+        testing if those versions remain supported;
       </li>
       <li>
-        the Firefox workaround directly replaces an internal NVDA method;
+        the update mechanism verifies the published SHA-256 hash, but this does
+        not replace cryptographic package signing; redirects are limited to
+        approved GitHub domains;
       </li>
       <li>
-        the update mechanism contains no signature or checksum verification in
-        this code;
-      </li>
-      <li>
-        cleanup and error handling should be tested against current NVDA
-        releases.
+        in-flight network requests are cancelled when the add-on stops, but
+        real-NVDA testing is still required to confirm every feature.
       </li>
     </ul>
     <p>

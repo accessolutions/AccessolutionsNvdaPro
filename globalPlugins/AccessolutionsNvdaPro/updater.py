@@ -1,7 +1,10 @@
+# -*- coding: utf-8 -*-
+
 """Recherche et installation sécurisées des mises à jour Accessolutions NVDA Pro."""
 
 import hashlib
 import hmac
+import io
 import json
 import logging
 import os
@@ -12,9 +15,12 @@ import threading
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlsplit
 from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
+import zipfile
 
 import addonHandler
 import globalVars
+
+addonHandler.initTranslation()
 
 log = logging.getLogger("AccessolutionsNVDAPro.updater")
 
@@ -26,9 +32,27 @@ _USER_AGENT = "AccessolutionsNVDAPro updater"
 _NETWORK_TIMEOUT = 30
 _MAX_RESPONSE_SIZE = 16 * 1024 * 1024
 _MAX_REDIRECTS = 5
+_READ_CHUNK_SIZE = 64 * 1024
+_ALLOWED_HOSTS = frozenset(
+	{
+		"api.github.com",
+		"github.com",
+		"www.github.com",
+		"raw.githubusercontent.com",
+		"objects.githubusercontent.com",
+		"release-assets.githubusercontent.com",
+		"github-releases.githubusercontent.com",
+		"github-production-release-asset-2e65be.s3.amazonaws.com",
+	}
+)
 _VERSION_PATTERN = re.compile(r"^(?:\d{8}(?:\.\d+)*|\d{4}(?:\.\d+){1,5})$")
 _ASSET_VERSION_PATTERN = re.compile(
 	r"^accessolutionsnvdapro-(?P<version>(?:\d{8}(?:\.\d+)*|\d{4}(?:\.\d+){1,5}))\.nvda-addon$",
+	re.IGNORECASE,
+)
+_SHA256_LINE_PATTERN = re.compile(
+	r"^\s*(?:[-*]\s*)?(?:sha[- ]?256\s*[:=]\s*)?"
+	r"(?P<digest>[0-9a-f]{64})(?:\s+(?P<filename>\*?\S+))?\s*$",
 	re.IGNORECASE,
 )
 
@@ -78,19 +102,90 @@ def _can_write_to_disk():
 	return not getattr(globalVars.appArgs, "secure", False)
 
 
-def _fetch_bytes(url):
-	if urlsplit(url).scheme.lower() != "https":
-		raise UpdateError("Seules les adresses HTTPS sont acceptées : %s" % url)
+class _Cancellation:
+	"""Annulation coopérative d’une opération réseau en cours."""
 
-	class HttpsRedirectHandler(HTTPRedirectHandler):
-		def redirect_request(self, request, file, code, message, headers, new_url):
-			if urlsplit(new_url).scheme.lower() != "https":
-				raise UpdateError("Une redirection non HTTPS a été refusée : %s" % new_url)
-			return super(HttpsRedirectHandler, self).redirect_request(
-				request, file, code, message, headers, new_url
+	def __init__(self):
+		self.event = threading.Event()
+		self._lock = threading.Lock()
+		self._response = None
+
+	def cancel(self):
+		self.event.set()
+		with self._lock:
+			response = self._response
+		if response is not None:
+			try:
+				response.close()
+			except (AttributeError, OSError, ValueError):
+				pass
+
+	def register_response(self, response):
+		with self._lock:
+			if self.event.is_set():
+				should_close = True
+			else:
+				self._response = response
+				should_close = False
+		if should_close:
+			try:
+				response.close()
+			except (AttributeError, OSError, ValueError):
+				pass
+
+	def unregister_response(self, response):
+		with self._lock:
+			if self._response is response:
+				self._response = None
+
+
+def _check_cancelled(cancellation):
+	if cancellation is not None and cancellation.event.is_set():
+		raise UpdateError(_("L’opération de mise à jour a été annulée."))
+
+
+def _validate_fetch_url(url, kind="adresse"):
+	try:
+		parsed = urlsplit(url)
+		hostname = parsed.hostname
+		port = parsed.port
+	except ValueError as error:
+		raise UpdateError(_("Adresse %s invalide : %s") % (kind, error))
+	if parsed.scheme.lower() != "https":
+		raise UpdateError(_("Seules les adresses HTTPS sont acceptées : %s") % url)
+	if parsed.username or parsed.password or not hostname or port not in (None, 443):
+		raise UpdateError(_("Adresse %s non sûre : %s") % (kind, url))
+	host = hostname.lower().rstrip(".")
+	if host not in _ALLOWED_HOSTS:
+		raise UpdateError(_("Domaine %s non autorisé pour une mise à jour : %s") % (host, url))
+
+
+class _SafeRedirectHandler(HTTPRedirectHandler):
+	"""Limite les redirections à HTTPS et aux domaines GitHub nécessaires."""
+
+	def __init__(self, cancellation=None):
+		super(_SafeRedirectHandler, self).__init__()
+		self._redirect_count = 0
+		self._cancellation = cancellation
+
+	def redirect_request(self, request, file, code, message, headers, new_url):
+		_check_cancelled(self._cancellation)
+		if self._redirect_count >= _MAX_REDIRECTS:
+			raise UpdateError(
+				_("Trop de redirections lors de la récupération de %s") % request.full_url
 			)
+		_validate_fetch_url(new_url, kind="redirection")
+		self._redirect_count += 1
+		return super(_SafeRedirectHandler, self).redirect_request(
+			request, file, code, message, headers, new_url
+		)
 
-	opener = build_opener(ProxyHandler(), HttpsRedirectHandler())
+
+def _fetch_bytes(url, cancellation=None):
+	_validate_fetch_url(url)
+	_check_cancelled(cancellation)
+
+	opener = build_opener(ProxyHandler(), _SafeRedirectHandler(cancellation))
 	request = Request(
 		url,
 		headers={
@@ -98,23 +193,111 @@ def _fetch_bytes(url):
 			"User-Agent": _USER_AGENT,
 		},
 	)
-	for _ in range(_MAX_REDIRECTS + 1):
-		try:
-			with opener.open(request, timeout=_NETWORK_TIMEOUT) as response:
-				data = response.read(_MAX_RESPONSE_SIZE + 1)
-		except (HTTPError, URLError, OSError) as error:
-			raise UpdateError("Impossible de récupérer %s : %s" % (url, error))
-		if len(data) > _MAX_RESPONSE_SIZE:
-			raise UpdateError("La réponse reçue est trop volumineuse")
-		return data
-	raise UpdateError("Trop de redirections lors de la récupération de %s" % url)
+	try:
+		with opener.open(request, timeout=_NETWORK_TIMEOUT) as response:
+			if cancellation is not None:
+				cancellation.register_response(response)
+			try:
+				data = bytearray()
+				while True:
+					_check_cancelled(cancellation)
+					chunk = response.read(
+						min(_READ_CHUNK_SIZE, _MAX_RESPONSE_SIZE + 1 - len(data))
+					)
+					data.extend(chunk)
+					if len(data) > _MAX_RESPONSE_SIZE:
+						raise UpdateError(_("La réponse reçue est trop volumineuse"))
+					if not chunk:
+						break
+				return bytes(data)
+			finally:
+				if cancellation is not None:
+					cancellation.unregister_response(response)
+	except UpdateError:
+		raise
+	except (HTTPError, URLError, OSError, ValueError) as error:
+		if cancellation is not None and cancellation.event.is_set():
+			raise UpdateError(_("L’opération de mise à jour a été annulée."))
+		raise UpdateError(_("Impossible de récupérer %s : %s") % (url, error))
 
 
-def _parse_sha256(data):
+def _parse_sha256(data, expected_filename=None):
+	"""Extrait une empreinte SHA-256 d’une ligne de somme conventionnelle.
+
+	Les contenus ambigus sont refusés. Si plusieurs empreintes sont publiées,
+	le nom du paquet attendu doit apparaître sur la ligne correspondante.
+	"""
 	if isinstance(data, bytes):
-		data = data.decode("ascii", errors="ignore")
-	match = re.search(r"(?i)\b([0-9a-f]{64})\b", data)
-	return match.group(1).lower() if match else None
+		try:
+			data = data.decode("utf-8")
+		except UnicodeDecodeError:
+			return None
+	if not isinstance(data, str):
+		return None
+	entries = []
+	for raw_line in data.splitlines():
+		line = raw_line.strip().strip("`")
+		match = _SHA256_LINE_PATTERN.fullmatch(line)
+		if match:
+			entries.append((
+				match.group("digest").lower(),
+				(match.group("filename") or "").lstrip("*"),
+			))
+	if not entries:
+		return None
+
+	all_digests = {digest for digest, _ in entries}
+	if expected_filename:
+		expected = os.path.basename(str(expected_filename)).lower()
+		named_digests = {
+			digest for digest, filename in entries
+			if filename and os.path.basename(filename).lower() == expected
+		}
+		if len(named_digests) == 1:
+			return next(iter(named_digests))
+		if named_digests:
+			return None
+	if len(all_digests) == 1:
+		return next(iter(all_digests))
+	return None
+
+
+def _manifest_value(manifest, key):
+	pattern = re.compile(r"^\s*%s\s*=\s*(.*?)\s*$" % re.escape(key), re.IGNORECASE)
+	for raw_line in manifest.splitlines():
+		match = pattern.match(raw_line.lstrip("\ufeff"))
+		if match:
+			return match.group(1).strip().strip("\"'")
+	return None
+
+
+def _inspect_package(data):
+	try:
+		with zipfile.ZipFile(io.BytesIO(data)) as package:
+			if package.namelist().count("manifest.ini") != 1:
+				raise UpdateError(_("Le paquet ne contient pas un manifeste unique."))
+			manifest = package.read("manifest.ini").decode("utf-8")
+	except UpdateError:
+		raise
+	except (UnicodeDecodeError, KeyError, OSError, zipfile.BadZipFile) as error:
+		raise UpdateError(_("Le paquet téléchargé est invalide : %s") % error)
+	name = _manifest_value(manifest, "name")
+	version = _manifest_value(manifest, "version")
+	if not name or not version:
+		raise UpdateError(_("Le manifeste du paquet est incomplet."))
+	return name, version
+
+
+def _validate_package(data, expected_version):
+	name, version = _inspect_package(data)
+	if name != ADDON_NAME:
+		raise UpdateError(_("Le paquet téléchargé ne correspond pas à Accessolutions NVDA Pro"))
+	if version != str(expected_version).strip():
+		raise UpdateError(
+			_("Incohérence de version : le paquet contient %s au lieu de %s")
+			% (version, expected_version)
+		)
+	return name, version
 
 
 def _release_version(release, asset_name):
@@ -134,7 +317,7 @@ def _find_assets(release):
 		and str(asset.get("browser_download_url", "")).startswith("https://")
 	]
 	if not addon_assets:
-		raise UpdateError("La release ne contient aucun module NVDA")
+		raise UpdateError(_("La release ne contient aucun module NVDA"))
 	addon_asset = next(
 		(
 			asset for asset in addon_assets
@@ -157,18 +340,19 @@ def _find_assets(release):
 	return addon_asset, hash_asset
 
 
-def check_for_update(current_version):
+def check_for_update(current_version, cancellation=None):
 	"""Retourne la dernière release stable vérifiée, ou None si elle est absente."""
 	try:
-		data = _fetch_bytes(RELEASES_URL)
+		data = _fetch_bytes(RELEASES_URL, cancellation=cancellation)
 		releases = json.loads(data.decode("utf-8"))
 	except (ValueError, UnicodeDecodeError) as error:
-		raise UpdateError("Réponse GitHub invalide : %s" % error)
+		raise UpdateError(_("Réponse GitHub invalide : %s") % error)
 	if not isinstance(releases, list):
-		raise UpdateError("GitHub a renvoyé une liste de releases invalide")
+		raise UpdateError(_("GitHub a renvoyé une liste de releases invalide"))
 
 	candidates = []
 	for release in releases:
+		_check_cancelled(cancellation)
 		if not isinstance(release, dict) or release.get("draft") or release.get("prerelease"):
 			continue
 		try:
@@ -184,11 +368,21 @@ def check_for_update(current_version):
 	):
 		try:
 			hash_url = hash_asset.get("browser_download_url") if hash_asset else None
-			sha256 = _parse_sha256(_fetch_bytes(hash_url)) if hash_url else None
+			addon_name = str(addon_asset.get("name", ""))
+			sha256 = (
+				_parse_sha256(
+					_fetch_bytes(hash_url, cancellation=cancellation),
+					expected_filename=addon_name,
+				)
+				if hash_url
+				else None
+			)
 			if not sha256:
-				sha256 = _parse_sha256(release.get("body", ""))
+				sha256 = _parse_sha256(
+					release.get("body", ""), expected_filename=addon_name
+				)
 			if not sha256:
-				raise UpdateError("La release ne publie pas d'empreinte SHA-256")
+				raise UpdateError(_("La release ne publie pas d'empreinte SHA-256"))
 			return UpdateInfo(
 				version=version,
 				release_name=str(release.get("name") or version),
@@ -204,13 +398,19 @@ def check_for_update(current_version):
 	return None
 
 
-def download_update(update):
+def download_update(update, cancellation=None):
 	if not _can_write_to_disk():
-		raise UpdateError("Les mises à jour sont désactivées en mode sécurisé")
-	data = _fetch_bytes(update.asset_url)
+		raise UpdateError(_("Les mises à jour sont désactivées en mode sécurisé"))
+	_check_cancelled(cancellation)
+	data = _fetch_bytes(update.asset_url, cancellation=cancellation)
 	digest = hashlib.sha256(data).hexdigest()
-	if not hmac.compare_digest(digest.lower(), update.sha256.lower()):
-		raise UpdateError("L'empreinte SHA-256 du module téléchargé est incorrecte")
+	expected_sha256 = str(update.sha256 or "").strip().lower()
+	if not re.fullmatch(r"[0-9a-f]{64}", expected_sha256):
+		raise UpdateError(_("L'empreinte SHA-256 publiée est invalide"))
+	if not hmac.compare_digest(digest.lower(), expected_sha256):
+		raise UpdateError(_("L'empreinte SHA-256 du module téléchargé est incorrecte"))
+	_validate_package(data, update.version)
+	_check_cancelled(cancellation)
 	fd, path = tempfile.mkstemp(prefix="AccessolutionsNVDAPro-", suffix=".nvda-addon")
 	try:
 		with os.fdopen(fd, "wb") as output:
@@ -263,27 +463,51 @@ def _request_remove_installed_addon():
 		log.warning("Impossible de planifier la suppression de l'ancienne version", exc_info=True)
 
 
-def install_package(path):
+def install_package(path, expected_version=None):
 	"""Installe un paquet déjà téléchargé et vérifié par l'API NVDA."""
 	if not _can_write_to_disk():
-		raise UpdateError("L'installation est désactivée en mode sécurisé")
+		raise UpdateError(_("L'installation est désactivée en mode sécurisé"))
 	if not path or not os.path.isfile(path):
-		raise UpdateError("Le paquet de mise à jour est introuvable")
+		raise UpdateError(_("Le paquet de mise à jour est introuvable"))
 	bundle_type = getattr(addonHandler, "AddonBundle", None)
 	installer = getattr(addonHandler, "installAddonBundle", None)
 	if bundle_type is not None and installer is not None:
-		bundle = bundle_type(path)
-		if bundle.manifest.get("name") != ADDON_NAME:
-			raise UpdateError("Le paquet téléchargé ne correspond pas à Accessolutions NVDA Pro")
+		try:
+			bundle = bundle_type(path)
+		except Exception as error:
+			raise UpdateError(_("Le paquet téléchargé est invalide : %s") % error)
+		manifest = getattr(bundle, "manifest", {})
+		if manifest.get("name") != ADDON_NAME:
+			raise UpdateError(_("Le paquet téléchargé ne correspond pas à Accessolutions NVDA Pro"))
+		bundled_version = str(manifest.get("version") or "").strip()
+		if not bundled_version:
+			raise UpdateError(_("Le manifeste du paquet ne contient pas de version"))
+		if expected_version is not None and bundled_version != str(expected_version).strip():
+			raise UpdateError(
+				_("Incohérence de version : le paquet contient %s au lieu de %s")
+				% (bundled_version, expected_version)
+			)
 		_remove_stale_pending_install()
 		_request_remove_installed_addon()
 		installer(bundle)
 		return
 	legacy_installer = getattr(addonHandler, "installAddonPackage", None)
 	if legacy_installer is not None:
+		with open(path, "rb") as package_file:
+			data = package_file.read(_MAX_RESPONSE_SIZE + 1)
+		if len(data) > _MAX_RESPONSE_SIZE:
+			raise UpdateError(_("Le paquet de mise à jour est trop volumineux"))
+		name, version = _inspect_package(data)
+		if name != ADDON_NAME or not version:
+			raise UpdateError(_("Le paquet téléchargé ne correspond pas à Accessolutions NVDA Pro"))
+		if expected_version is not None and version != str(expected_version).strip():
+			raise UpdateError(
+				_("Incohérence de version : le paquet contient %s au lieu de %s")
+				% (version, expected_version)
+			)
 		legacy_installer(path)
 		return
-	raise UpdateError("Cette version de NVDA ne fournit pas d'API d'installation d'extension")
+	raise UpdateError(_("Cette version de NVDA ne fournit pas d'API d'installation d'extension"))
 
 
 class UpdateManager:
@@ -293,6 +517,7 @@ class UpdateManager:
 		self._lock = threading.Lock()
 		self._workers = set()
 		self._stopped = threading.Event()
+		self._cancellations = {}
 
 	def _start(self, target, callback):
 		with self._lock:
@@ -301,45 +526,55 @@ class UpdateManager:
 			self._workers = {worker for worker in self._workers if worker.is_alive()}
 			if self._workers:
 				return False
+			cancellation = _Cancellation()
 			worker = threading.Thread(
 				target=target,
-				args=(callback,),
+				args=(callback, cancellation),
 				name="Accessolutions NVDA Pro updater",
 				daemon=True,
 			)
 			self._workers.add(worker)
+			self._cancellations[worker] = cancellation
 		worker.start()
 		return True
 
 	def check_async(self, current_version, callback, manual=False):
-		def run(done):
+		def run(done, cancellation):
 			try:
-				result = check_for_update(current_version)
+				result = check_for_update(current_version, cancellation=cancellation)
 			except Exception as error:
 				log.debug("Échec de la recherche de mise à jour", exc_info=True)
 				with self._lock:
 					self._workers.discard(threading.current_thread())
+					self._cancellations.pop(threading.current_thread(), None)
 				done(None, error, manual)
 			else:
 				with self._lock:
 					self._workers.discard(threading.current_thread())
+					self._cancellations.pop(threading.current_thread(), None)
 				done(result, None, manual)
 		return self._start(run, callback)
 
 	def download_async(self, update, callback):
-		def run(done):
+		def run(done, cancellation):
 			try:
-				path = download_update(update)
+				path = download_update(update, cancellation=cancellation)
 			except Exception as error:
 				log.debug("Échec du téléchargement de la mise à jour", exc_info=True)
 				with self._lock:
 					self._workers.discard(threading.current_thread())
+					self._cancellations.pop(threading.current_thread(), None)
 				done(None, error)
 			else:
 				with self._lock:
 					self._workers.discard(threading.current_thread())
+					self._cancellations.pop(threading.current_thread(), None)
 				done(path, None)
 		return self._start(run, callback)
 
 	def terminate(self):
 		self._stopped.set()
+		with self._lock:
+			cancellations = list(self._cancellations.values())
+		for cancellation in cancellations:
+			cancellation.cancel()

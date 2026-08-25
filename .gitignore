@@ -1,0 +1,15 @@
+# Fichiers générés par SCons et les tests
+.sconsign.dblite
+.sconsign*.dblite
+build/
+package/
+*.nvda-addon
+*.nvda-addon.sha256
+
+# Fichiers Python temporaires
+__pycache__/
+*.py[cod]
+
+# Fichiers temporaires des outils
+*.tmp
+*.bak
