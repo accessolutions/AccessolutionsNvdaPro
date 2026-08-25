@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="fr-FR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Documentation d'Accessolutions NVDA Pro</title>
+</head>
+<body>
+  <header>
+    <h1>Accessolutions NVDA Pro</h1>
+    <p>Documentation française</p>
+  </header>
+
+  <main>
+    <p><strong>Version de l'extension :</strong> 2026.08.25.0001</p>
+    <p>
+      Accessolutions NVDA Pro ajoute des fonctions à NVDA et propose notamment
+      des raccourcis de navigation web inspirés de JAWS. L'extension fournit
+      également une recherche incrémentale, des outils liés au braille, une
+      demande d'assistance à distance et quelques adaptations à des applications
+      Windows.
+    </p>
+
+    <nav aria-label="Sommaire">
+      <h2>Sommaire</h2>
+      <ul>
+        <li><a href="#prerequis">Prérequis et compatibilité</a></li>
+        <li><a href="#installation">Installation et préférences</a></li>
+        <li><a href="#navigation">Navigation web</a></li>
+        <li><a href="#recherche">Recherche incrémentale</a></li>
+        <li><a href="#braille">Braille</a></li>
+        <li><a href="#raccourcis-globaux">Raccourcis globaux</a></li>
+        <li><a href="#assistance">Assistance à distance</a></li>
+        <li><a href="#applications">Adaptations par application</a></li>
+        <li><a href="#depannage">Dépannage</a></li>
+        <li><a href="#limites">Limites et revue technique</a></li>
+      </ul>
+    </nav>
+
+    <h2 id="prerequis">Prérequis et compatibilité</h2>
+    <ul>
+      <li>Windows et NVDA sont nécessaires.</li>
+      <li>
+        Le manifeste déclare une version minimale de NVDA 2018.2.1 et une
+        dernière version testée 2026.4.0. Ces valeurs sont déclaratives et ne
+        constituent pas une garantie de fonctionnement sur toutes les versions.
+      </li>
+      <li>
+        L'assistance à distance nécessite l'extension NVDA Remote, installée et
+        activée dans NVDA.
+      </li>
+    </ul>
+    <p>
+      Une partie du code utilise des API anciennes de NVDA et des appels propres
+      à Python 2. Il est donc recommandé de valider l'extension avec la version
+      exacte de NVDA utilisée avant un déploiement auprès de plusieurs postes.
+    </p>
+
+    <h2 id="installation">Installation et préférences</h2>
+    <ol>
+      <li>
+        Installez le fichier <code>.nvda-addon</code> avec le gestionnaire des
+        extensions de NVDA.
+      </li>
+      <li>Redémarrez NVDA lorsque cela est demandé.</li>
+      <li>
+        Ouvrez <strong>Préférences &gt; Paramètres &gt; AccessolutionsNVDAPro</strong>.
+      </li>
+    </ol>
+    <p>
+      La case <strong>En mode navigation, utiliser des raccourcis similaires à
+      JAWS</strong> est cochée par défaut. Si elle est décochée, les raccourcis
+      de navigation web standards de NVDA sont utilisés après redémarrage de
+      NVDA. Si elle est cochée, la carte de raccourcis Accessolutions est
+      chargée immédiatement après l'enregistrement.
+    </p>
+    <p>
+      Les raccourcis peuvent entrer en conflit avec ceux de NVDA, du navigateur
+      ou d'une autre extension. La carte Accessolutions ne concerne que le mode
+      navigation ; elle ne remplace pas tous les raccourcis de NVDA.
+    </p>
+
+    <h3>Mises à jour</h3>
+    <p>
+      L'extension recherche automatiquement les nouvelles versions stables au
+      démarrage de NVDA. Cette recherche peut être désactivée dans les
+      préférences avec la case <strong>Rechercher automatiquement les mises à
+      jour au démarrage de NVDA</strong>. Une vérification manuelle est
+      disponible dans le menu système <strong>Accessolutions &gt; Vérifier les
+      mises à jour...</strong>.
+    </p>
+    <p>
+      Les versions sont publiées dans le dépôt public
+      <a href="https://github.com/Accessolutions/AccessolutionsNVDAPro">GitHub d'Accessolutions NVDA Pro</a>
+      sous forme de releases créées à partir de tags. L'extension ignore les
+      brouillons et les versions de prépublication. Elle télécharge le paquet
+      uniquement après confirmation de l'utilisateur, vérifie son empreinte
+      SHA-256, puis demande le redémarrage de NVDA pour terminer l'installation.
+      Une erreur réseau au démarrage est enregistrée dans le journal sans
+      interrompre NVDA.
+    </p>
+
+    <h2 id="navigation">Navigation web</h2>
+    <p>
+      Ces commandes sont destinées au mode navigation dans un navigateur ou un
+      document web compatible.
+    </p>
+
+    <h3>Recherche et conteneurs</h3>
+    <table>
+      <thead>
+        <tr><th>Raccourci</th><th>Action</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><kbd>Ctrl+F</kbd></td><td>Ouvre la recherche de texte.</td></tr>
+        <tr><td><kbd>F3</kbd></td><td>Recherche l'occurrence suivante.</td></tr>
+        <tr><td><kbd>Maj+F3</kbd></td><td>Recherche l'occurrence précédente.</td></tr>
+        <tr><td><kbd>NVDA+Échap</kbd></td><td>Actualise le tampon du document.</td></tr>
+        <tr><td><kbd>Maj+Q</kbd></td><td>Va au début du conteneur courant.</td></tr>
+        <tr><td><kbd>Q</kbd></td><td>Va après la fin du conteneur courant.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Navigation rapide</h3>
+    <p>
+      Une touche seule va à l'élément suivant. La même touche avec <kbd>Maj</kbd>
+      va à l'élément précédent.
+    </p>
+    <table>
+      <thead>
+        <tr><th>Suivant</th><th>Précédent</th><th>Élément</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><kbd>T</kbd></td><td><kbd>Maj+T</kbd></td><td>Titre</td></tr>
+        <tr><td><kbd>Y</kbd></td><td><kbd>Maj+Y</kbd></td><td>Tableau</td></tr>
+        <tr><td><kbd>N</kbd></td><td><kbd>Maj+N</kbd></td><td>Lien non visité</td></tr>
+        <tr><td><kbd>U</kbd></td><td><kbd>Maj+U</kbd></td><td>Bouton</td></tr>
+        <tr><td><kbd>Z</kbd></td><td><kbd>Maj+Z</kbd></td><td>Liste déroulante</td></tr>
+        <tr><td><kbd>C</kbd></td><td><kbd>Maj+C</kbd></td><td>Citation</td></tr>
+        <tr><td><kbd>H</kbd></td><td><kbd>Maj+H</kbd></td><td>Cadre</td></tr>
+        <tr><td><kbd>B</kbd></td><td><kbd>Maj+B</kbd></td><td>Bloc qui n'est pas un lien</td></tr>
+      </tbody>
+    </table>
+    <p>
+      Les touches <kbd>M</kbd>, <kbd>Maj+M</kbd>, <kbd>,</kbd> et
+      <kbd>Maj+,</kbd> sont également présentes dans la carte de gestes, mais
+      ne correspondent pas à une destination de navigation documentée par le
+      module.
+    </p>
+
+    <h2 id="recherche">Recherche incrémentale</h2>
+    <p>
+      La recherche incrémentale permet de rechercher du texte dans un document
+      web sans ouvrir la boîte de dialogue de recherche classique.
+    </p>
+    <ol>
+      <li>Placez le focus dans un document web en mode navigation.</li>
+      <li>Appuyez sur <kbd>Ctrl+I</kbd>.</li>
+      <li>Tapez tout ou partie du texte recherché.</li>
+      <li>
+        Après une courte pause, l'extension recherche la première occurrence à
+        partir du début du document, sélectionne la ligne trouvée et la lit.
+      </li>
+    </ol>
+    <p>
+      La recherche s'arrête automatiquement après une période d'inactivité. Si
+      aucun caractère n'a été saisi, NVDA annonce « Recherche annulée ». Si le
+      texte n'est pas trouvé, NVDA annonce qu'il est introuvable.
+    </p>
+    <p>
+      Cette fonction capture temporairement les frappes clavier. Les touches
+      <kbd>Tab</kbd>, <kbd>Maj+Tab</kbd>, <kbd>Échap</kbd> et <kbd>Entrée</kbd>
+      ne sont pas gérées de manière fiable par la version actuelle ; utilisez
+      cette commande uniquement dans un document web et redémarrez NVDA si la
+      capture clavier semble rester active.
+    </p>
+
+    <h2 id="braille">Braille</h2>
+    <p>
+      <kbd>Win+Ctrl+B</kbd> bascule entre les deux tables braille françaises
+      attendues par l'extension :
+    </p>
+    <ul>
+      <li>braille intégral : <code>fr-bfu-comp8.utb</code> ;</li>
+      <li>braille abrégé : <code>fr-bfu-g2.ctb</code>.</li>
+    </ul>
+    <p>
+      Si une autre table est active, l'extension annonce que la table braille
+      est inconnue et ne la modifie pas.
+    </p>
+
+    <h2 id="raccourcis-globaux">Raccourcis globaux</h2>
+    <table>
+      <thead>
+        <tr><th>Raccourci</th><th>Action</th><th>Portée</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><kbd>Win+Ctrl+R</kbd></td>
+          <td>Ouvre la demande d'assistance à distance Accessolutions.</td>
+          <td>Toutes les applications</td>
+        </tr>
+        <tr>
+          <td><kbd>Win+Ctrl+Maj+D</kbd></td>
+          <td>Bascule l'indicateur interne de mode test de NVDA.</td>
+          <td>Toutes les applications</td>
+        </tr>
+        <tr>
+          <td><kbd>NVDA+F7</kbd></td>
+          <td>Transmet F7 à l'intercepteur du document courant, lorsque cela est possible.</td>
+          <td>Document avec intercepteur d'arbre</td>
+        </tr>
+      </tbody>
+    </table>
+    <p>
+      Le mode test est un outil de diagnostic interne. Il ne doit pas être
+      activé sans savoir quelles conséquences il peut avoir sur la version de
+      NVDA utilisée.
+    </p>
+
+    <h2 id="assistance">Assistance à distance</h2>
+    <p>
+      La commande d'assistance connecte NVDA Remote comme esclave au serveur
+      Accessolutions et transmet les informations de connexion au service
+      d'assistance.
+    </p>
+    <h3>Procédure</h3>
+    <ol>
+      <li>Installez et activez l'extension NVDA Remote.</li>
+      <li>
+        Appuyez sur <kbd>Win+Ctrl+R</kbd>, ou ouvrez le menu système
+        <strong>Accessolutions &gt; Assistance à distance</strong>.
+      </li>
+      <li>Confirmez la connexion à l'assistance.</li>
+      <li>
+        Une clé de session est générée. L'URL de connexion est copiée dans le
+        presse-papiers et envoyée au service Accessolutions avec le nom du
+        compte Windows courant.
+      </li>
+      <li>
+        Pour interrompre une session existante, réutilisez le même raccourci et
+        confirmez la déconnexion.
+      </li>
+    </ol>
+    <p>
+      Si NVDA Remote n'est pas installé ou n'est pas chargé, l'extension annonce
+      que le module est introuvable.
+    </p>
+    <p>
+      <strong>Confidentialité et sécurité :</strong> le code actuel utilise le
+      port 80 pour la connexion NVDA Remote et l'URL de demande d'assistance est
+      en HTTP. L'URL de session et le nom d'utilisateur Windows sont donc
+      transmis à un service externe sans protection HTTPS visible dans ce code.
+      Vérifiez la politique de sécurité de votre organisation avant d'utiliser
+      cette fonction sur un poste sensible.
+    </p>
+
+    <h2 id="applications">Adaptations par application</h2>
+    <h3>Bloc-notes Windows</h3>
+    <p>
+      Dans le Bloc-notes, <kbd>Ctrl+Maj+R</kbd> active ou désactive l'annonce du
+      numéro des curseurs de routage braille. Lorsque l'option est active,
+      l'activation d'un curseur de routage annonce son numéro ; lorsqu'elle est
+      inactive, le geste braille est transmis à son traitement habituel.
+    </p>
+
+    <h3>OpenBook</h3>
+    <p>
+      Lorsque la fenêtre OpenBook reçoit le focus, la parole de NVDA est
+      annulée et le mode de parole est désactivé. Lorsque OpenBook perd le
+      focus, le mode de parole est remis en mode « talk ». Ce comportement peut modifier un
+      réglage de parole attendu par l'utilisateur pendant l'utilisation
+      d'OpenBook.
+    </p>
+
+    <h3>Firefox et WebAccess</h3>
+    <p>
+      L'extension applique un correctif interne au tampon virtuel Gecko de
+      Firefox afin d'améliorer le test d'appartenance des objets accessibles.
+      Il s'agit d'un contournement dépendant des API internes de NVDA et de
+      Firefox ; il peut devenir incompatible après une mise à jour.
+    </p>
+
+    <h3>Installation de NVDA</h3>
+    <p>
+      <kbd>Win+Ctrl+I</kbd> ouvre une ancienne interface d'installation de NVDA
+      présente dans le code du module. Ce raccourci ne correspond pas à
+      l'installation de l'extension Accessolutions NVDA Pro elle-même. Pour
+      installer l'extension, utilisez le gestionnaire des extensions de NVDA.
+    </p>
+
+    <h2 id="depannage">Dépannage</h2>
+    <ul>
+      <li>
+        <strong>Le menu Accessolutions est absent :</strong> vérifiez que
+        l'extension est activée, puis redémarrez NVDA.
+      </li>
+      <li>
+        <strong>Les raccourcis web ne répondent pas :</strong> vérifiez la case
+        AccessolutionsNVDAPro dans les paramètres de NVDA et utilisez les
+        raccourcis dans un document en mode navigation.
+      </li>
+      <li>
+        <strong>Un raccourci est en conflit :</strong> désactivez les gestes
+        français dans les paramètres, redémarrez NVDA et utilisez les gestes
+        standards de NVDA.
+      </li>
+      <li>
+        <strong>L'assistance échoue :</strong> vérifiez que NVDA Remote est
+        installé, que le réseau autorise la connexion et que le serveur
+        Accessolutions est disponible.
+      </li>
+      <li>
+        <strong>Le clavier semble capturé après Ctrl+I :</strong> attendez la
+        fin du délai ou redémarrez NVDA, puis consultez le journal NVDA pour
+        rechercher une erreur liée à la recherche incrémentale.
+      </li>
+    </ul>
+
+    <h2 id="limites">Limites et revue technique</h2>
+    <p>
+      Les points suivants ont été constatés dans la version documentée :
+    </p>
+    <ul>
+      <li>
+        le système de mise à jour dépend de l'existence et de la publication
+        correcte du dépôt GitHub public configuré dans le module ;
+      </li>
+      <li>
+        les mises à jour automatiques ne sont jamais silencieuses : une
+        confirmation et un redémarrage de NVDA sont demandés ;
+      </li>
+      <li>
+        les appels <code>urllib.FancyURLopener</code>,
+        <code>urllib.urlretrieve</code> et <code>unicode</code> sont hérités de
+        Python 2 et peuvent échouer avec Python 3 ;
+      </li>
+      <li>
+        la recherche incrémentale s'appuie sur des attributs privés de NVDA et
+        contient des branches de traitement placées après un retour, donc
+        inatteignables ;
+      </li>
+      <li>
+        le correctif Firefox modifie directement une méthode interne de NVDA ;
+      </li>
+      <li>
+        le mécanisme de mise à jour ne présente pas de vérification de signature
+        ou d'empreinte dans ce code ;
+      </li>
+      <li>
+        les fonctions de nettoyage et la gestion des erreurs mériteraient des
+        tests sur les versions modernes de NVDA.
+      </li>
+    </ul>
+    <p>
+      En cas de problème, reproduisez-le avec les autres extensions désactivées
+      lorsque cela est possible, puis joignez le journal NVDA à votre rapport.
+      Ne transmettez jamais une URL de session d'assistance ou une information
+      personnelle dans un rapport public.
+    </p>
+  </main>
+</body>
+</html>

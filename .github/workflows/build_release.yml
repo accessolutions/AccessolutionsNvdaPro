@@ -1,0 +1,74 @@
+name: Build and publish Accessolutions NVDA Pro
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Build add-on package
+        shell: bash
+        run: |
+          set -euo pipefail
+          version="${GITHUB_REF_NAME#v}"
+          if [[ ! "$version" =~ ^[0-9]{4}(\.[0-9]+){2,5}$ ]]; then
+            echo "Invalid version tag: $GITHUB_REF_NAME" >&2
+            exit 1
+          fi
+
+          rm -rf package
+          mkdir package
+          cp manifest.ini package/manifest.ini
+          sed -E -i "s/^version = .*/version = $version/" package/manifest.ini
+          cp -R appModules package/appModules
+          cp -R globalPlugins package/globalPlugins
+          cp -R doc package/doc
+          find package -type d -name __pycache__ -prune -exec rm -rf {} +
+          find package -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete
+
+          asset="AccessolutionsNVDAPro-${version}.nvda-addon"
+          (cd package && zip -qr "../$asset" manifest.ini appModules globalPlugins doc)
+          sha256sum "$asset" | awk '{print $1}' > "$asset.sha256"
+          echo "Built $asset"
+
+      - name: Upload add-on artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: accessolutions-nvda-pro-package
+          path: |
+            AccessolutionsNVDAPro-*.nvda-addon
+            AccessolutionsNVDAPro-*.nvda-addon.sha256
+          if-no-files-found: error
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Download add-on artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: accessolutions-nvda-pro-package
+          path: release
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Accessolutions NVDA Pro ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            release/*.nvda-addon
+            release/*.nvda-addon.sha256
+          fail_on_unmatched_files: true
+          prerelease: false
