@@ -135,6 +135,18 @@ class _GestureWithoutIdentifier:
         self.mainKeyName = main_key_name
 
 
+class _GestureWithCharacterError:
+
+    isModifier = False
+    normalizedIdentifiers = ("kb:a",)
+    isCharacter = True
+    mainKeyName = "a"
+
+    @property
+    def character(self):
+        raise RuntimeError("character indisponible")
+
+
 class _AnnouncementInfo:
 
     def __init__(self, text="correspondance"):
@@ -299,6 +311,26 @@ class RechercheIncrementaleTests(unittest.TestCase):
 
         self.assertFalse(consumed)
         plugin._cancelSearch.assert_called_once_with()
+
+    def test_character_falls_back_when_nvda_character_raises(self):
+        plugin = self._active_plugin()
+        plugin._scheduleSearch = MagicMock()
+
+        consumed = plugin._captureFunc(_GestureWithCharacterError())
+
+        self.assertFalse(consumed)
+        self.assertTrue(plugin._searchActive)
+        self.assertEqual("a", plugin.searchString)
+        plugin._scheduleSearch.assert_called_once()
+
+    def test_capture_survives_unexpected_context_exception(self):
+        plugin = self._active_plugin()
+        plugin._isCurrentSearchDocument = MagicMock(side_effect=RuntimeError("COM"))
+
+        consumed = plugin._captureFunc(_Gesture("kb:a", character="a"))
+
+        self.assertTrue(consumed)
+        self.assertTrue(plugin._searchActive)
 
     def test_control_character_does_not_enter_query(self):
         plugin = self._active_plugin()

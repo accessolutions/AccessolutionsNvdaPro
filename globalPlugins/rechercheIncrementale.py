@@ -112,6 +112,17 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		focus = api.getFocusObject()
 		return getattr(focus, "treeInterceptor", None)
 
+	def _isCurrentSearchDocument(self, treeInterceptor=None):
+		target = self._treeInterceptor if treeInterceptor is None else treeInterceptor
+		try:
+			return self._getCurrentTreeInterceptor() is target
+		except Exception:
+			# L'objet Firefox peut être interrogé depuis le thread winInputHook.
+			# En cas d'erreur COM, conserver la capture plutôt que de la laisser
+			# remonter jusqu'à inputCore, qui la désactiverait définitivement.
+			log.debug("Contexte de recherche momentanément inaccessible", exc_info=True)
+			return True
+
 	def _clearLastSearch(self):
 		self._lastSearchText = ""
 		self._lastSearchTreeInterceptor = None
@@ -145,6 +156,20 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# locale avec ToUnicodeEx risquerait notamment de transformer 1 en & sur
 		# un clavier français.
 		return getattr(gesture, "character", "") or ""
+
+	def _getFallbackCharacter(self, gesture, main):
+		try:
+			if not getattr(gesture, "isCharacter", False):
+				return ""
+			keyName = getattr(gesture, "mainKeyName", "") or ""
+		except Exception:
+			log.debug("Caractère de repli inaccessible", exc_info=True)
+			return ""
+		if keyName == "space" or main == "space":
+			return " "
+		if isinstance(keyName, str) and len(keyName) == 1:
+			return keyName
+		return main if isinstance(main, str) and len(main) == 1 else ""
 
 	def _findFromStart(self, treeInterceptor, searchText):
 		info = treeInterceptor.makeTextInfo(textInfos.POSITION_FIRST)
@@ -194,7 +219,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		searchText = self._lastSearchText
 		if treeInterceptor is None or not searchText:
 			return False
-		if self._getCurrentTreeInterceptor() is not treeInterceptor:
+		if not self._isCurrentSearchDocument(treeInterceptor):
 			self._clearLastSearch()
 			return False
 
@@ -220,9 +245,18 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			return True
 
 	def _captureFunc(self, gesture):
+		try:
+			return self._captureGesture(gesture)
+		except Exception:
+			# inputCore désactive sa capture lorsqu'elle lève une exception.
+			# Une erreur COM transitoire ne doit donc pas fermer la recherche.
+			log.exception("Capture de la recherche incrémentale impossible")
+			return True
+
+	def _captureGesture(self, gesture):
 		if not self._searchActive:
 			return True
-		if self._getCurrentTreeInterceptor() is not self._treeInterceptor:
+		if not self._isCurrentSearchDocument():
 			# Le document a changé : ne jamais appliquer la requête à un autre document.
 			self._releaseCapture()
 			self._treeInterceptor = None
@@ -234,11 +268,13 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		# Un clavier NVDA fournit normalement un identifiant kb, mais certains
 		# gestes clavier peuvent ne pas en fournir. Le caractère reste la source
 		# fiable pour continuer la saisie dans la recherche incrémentale.
+		characterRead = True
 		try:
 			character = self._getCharacter(gesture)
 		except Exception:
 			log.exception("getCharacter")
 			character = ""
+			characterRead = False
 		if isinstance(character, str) and character and all(char.isprintable() for char in character):
 			self.searchString += character
 			log.info(u"Recherche incrémentale : %s", self.searchString)
@@ -247,11 +283,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 		gestureIdentifier = self._getGestureIdentifier(gesture)
 		main = self._getGestureMain(gesture, gestureIdentifier)
-		if not main:
-			self._releaseCapture()
-			self._treeInterceptor = None
-			self._clearLastSearch()
-			return True
 
 		if main in ("escape", "esc"):
 			self._cancelSearch()
@@ -275,6 +306,28 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			self._scheduleSearch()
 			return False
 
+		fallbackCharacter = self._getFallbackCharacter(gesture, main)
+		if fallbackCharacter and all(char.isprintable() for char in fallbackCharacter):
+			self.searchString += fallbackCharacter
+			log.info(u"Recherche incrémentale : %s", self.searchString)
+			self._scheduleSearch()
+			return False
+
+		if characterRead is False:
+			try:
+				if getattr(gesture, "isCharacter", False):
+					# Garder la capture active même si le caractère ne peut pas être
+					# récupéré pendant une erreur COM transitoire.
+					return False
+			except Exception:
+				log.debug("Type de geste inaccessible", exc_info=True)
+
+		if not main:
+			self._releaseCapture()
+			self._treeInterceptor = None
+			self._clearLastSearch()
+			return True
+
 		# Une commande non textuelle met fin à la capture sans bloquer NVDA.
 		self.stopSearch(self._searchCount)
 		return True
@@ -290,7 +343,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			self._lastSearchedText = ""
 			self._clearLastSearch()
 			return
-		if self._getCurrentTreeInterceptor() is not self._treeInterceptor:
+		if not self._isCurrentSearchDocument():
 			self._releaseCapture()
 			self._treeInterceptor = None
 			self._clearLastSearch()
