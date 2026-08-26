@@ -18,7 +18,7 @@ geste de débogage sont décrits aux points 1 à 3 ; les autres problèmes reste
 - AST Python valide pour les 11 fichiers Python du dépôt.
 - Aucun diagnostic signalé par VS Code.
 - Aucune erreur de formatage signalée par `git diff --check`.
-- Tests unitaires présents pour les contrôles principaux de l’updater dans [tests/test_updater.py](tests/test_updater.py).
+- Tests unitaires présents pour les contrôles principaux de l’updater dans [tests/test_updater.py](tests/test_updater.py) et du flux distant dans [tests/test_remote_requests.py](tests/test_remote_requests.py).
 - Aucun test d’exécution effectué avec NVDA réel, NVDA Remote ou wxPython.
 - La compatibilité déclarée avec NVDA 2026.1 reste donc à confirmer en situation réelle.
 
@@ -26,7 +26,7 @@ geste de débogage sont décrits aux points 1 à 3 ; les autres problèmes reste
 
 ### 1. Assistance à distance : saisie de la clé du support (traité)
 
-Le point 1 a été traité dans [remoteRequests.py](globalPlugins/AccessolutionsNvdaPro/remoteRequests.py#L1-L82).
+Le point 1 a été traité dans [remoteRequests.py](globalPlugins/AccessolutionsNvdaPro/remoteRequests.py#L1-L336).
 
 Le fonctionnement est maintenant le suivant :
 
@@ -40,13 +40,33 @@ Le fonctionnement est maintenant le suivant :
 - les documentations française et anglaise ont été réalignées.
 
 La connexion reste dépendante du gestionnaire du protocole `nvdaremote://` fourni
-par NVDA Remote. L’extension ne contacte pas directement un service HTTP et ne
-gère pas elle-même la déconnexion ; celle-ci doit être effectuée depuis NVDA
-Remote.
+par l’accès distant intégré de NVDA ou par un module compatible. Avant de
+demander la clé, l’extension vérifie que l’accès distant intégré est activé dans
+la configuration NVDA (`[remote] enabled`) ou qu’un module connu est chargé,
+notamment NVDA Remote, Telenvda ou Telenvda Accessolutions. Elle ne lit pas
+directement `nvda.ini` : elle utilise la configuration déjà chargée par NVDA.
+Si aucun module distant compatible n’est détecté, elle ne bloque pas la
+demande : elle tente tout de même d’ouvrir l’URL `nvdaremote://`. Le résultat
+dépend alors de la présence d’un gestionnaire de ce protocole sur le poste.
 
-Le point doit encore être validé avec une installation réelle de NVDA Remote,
-notamment avec une clé contenant des espaces ou des caractères spéciaux, ainsi
-qu’avec une clé vide et l’annulation de la boîte de dialogue.
+Après la saisie et la validation de la clé, l’état est relu. Si une connexion
+est active, l’utilisateur confirme sa déconnexion, puis l’extension la
+désactive avant d’ouvrir la nouvelle URL en mode esclave. Une connexion maître,
+une connexion en cours ou une connexion encore active après la tentative de
+déconnexion n’est jamais remplacée sans confirmation ; en cas de refus ou
+d’échec explicite de déconnexion, la nouvelle demande n’est pas lancée. Si le
+module ne permet pas de confirmer l’état après la demande de déconnexion, la
+nouvelle demande est tout de même tentée et le module distant gère la situation.
+
+Le point doit encore être validé avec l’accès distant intégré de NVDA 2026.1,
+NVDA Remote et les modules Telenvda réellement distribués, notamment avec une
+clé contenant des espaces ou des caractères spéciaux, une session maître et
+une session esclave déjà actives, une clé vide et l’annulation de la boîte de
+dialogue.
+
+Le sous-menu Accessolutions contient également une entrée « Produits et
+services pour personnes déficientes visuelles - Accessolutions » qui ouvre
+`https://accessolutions.fr` dans le navigateur par défaut.
 
 ### 2. Appel incorrect de l’API d’installation NVDA (traité)
 
@@ -110,8 +130,13 @@ Le comportement est maintenant le suivant :
   nouvelle recherche ;
 - la recherche commence au début du document et sélectionne la première
   occurrence trouvée ;
-- le curseur virtuel de NVDA est déplacé sur cette occurrence et sa ligne est
-  annoncée ;
+- le curseur virtuel de NVDA est déplacé sur cette occurrence, sa ligne est
+  annoncée, puis la suite du paragraphe est lue lorsqu’elle est disponible ;
+- la conversion des caractères est déléguée à `KeyboardInputGesture.character`
+  de NVDA afin de respecter la disposition active, les touches mortes et
+  AltGr, notamment sur un clavier français ;
+- après une recherche réussie, `F3` recherche l’occurrence suivante et
+  `Maj+F3` l’occurrence précédente, sans modifier `_lastFindText` de NVDA ;
 - l’annonce précédente est annulée avant la nouvelle afin d’éviter les
   empilements de parole pendant une saisie rapide ;
 - `Échap` annule la recherche, `Entrée` la termine et `Tab` ou `Maj+Tab` la

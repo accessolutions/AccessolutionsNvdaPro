@@ -44,8 +44,11 @@
         every NVDA release; perform a real-NVDA test before each publication.
       </li>
       <li>
-        Remote assistance requires the NVDA Remote add-on to be installed and
-        enabled in NVDA.
+        Remote assistance uses NVDA 2026.1's built-in Remote Access when it is
+        enabled, or a compatible module such as NVDA Remote, Telenvda, or
+        Telenvda Accessolutions when installed and active. If no compatible
+        module is detected, the add-on still attempts to open the connection
+        request.
       </li>
     </ul>
     <p>
@@ -89,6 +92,12 @@
       The add-on downloads a package only after user confirmation, verifies its
       SHA-256 hash, and then asks to restart NVDA to complete installation. A
       network error during startup is logged without interrupting NVDA.
+    </p>
+    <p>
+      The system menu item <strong>Accessolutions &gt; Products and services for
+      people with visual impairments - Accessolutions</strong> opens
+      <a href="https://accessolutions.fr">https://accessolutions.fr</a> in
+      the default browser.
     </p>
 
     <h2 id="navigation">Web browsing</h2>
@@ -150,8 +159,8 @@
       <li>Type all or part of the text to find, as quickly as needed.</li>
       <li>
         After each character, the add-on searches from the beginning of the
-        document, moves the virtual cursor to the first match, and reads its
-        line.
+        document, moves the virtual cursor to the first match, reads its line,
+        and then reads the remaining paragraph when available.
       </li>
     </ol>
     <p>
@@ -159,6 +168,12 @@
       search stops automatically after four seconds of inactivity. If no
       characters were entered, NVDA announces that the search was cancelled.
       If no match is found, NVDA announces that the text was not found.
+    </p>
+    <p>
+      Input uses NVDA's keyboard conversion so that the active layout is
+      respected, including French keyboard layouts, digits, accented
+      characters, and AltGr. After a successful search, <kbd>F3</kbd> finds
+      the next occurrence and <kbd>Shift+F3</kbd> finds the previous one.
     </p>
     <p>
       This feature temporarily captures keyboard input. <kbd>Backspace</kbd>
@@ -235,8 +250,20 @@
       </li>
     </ol>
     <p>
-      The add-on does not store the key. To end the session, use the disconnect
-      command provided by NVDA Remote.
+      Before requesting a new connection, the add-on checks that remote access
+      is enabled and inspects the known remote modules. If a remote session is
+      already active, the add-on asks for confirmation and disconnects it
+      before starting the new slave connection. If the user declines, the
+      disconnection fails, or a connection is still reported as active, the
+      new request is not started. If the module cannot confirm its state after
+      the disconnection request, the attempt is still made and the remote
+      module handles the situation. If no compatible remote module is
+      detected, the URL is also opened; its handling then depends on whether a
+      <code>nvdaremote://</code> protocol handler is present on the computer.
+    </p>
+    <p>
+      The add-on does not store the key. To end an established session, use the
+      disconnect command provided by the remote module.
     </p>
     <p>
       <strong>Privacy and security:</strong> the add-on passes the entered key
@@ -294,9 +321,11 @@
         gestures.
       </li>
       <li>
-        <strong>Remote assistance fails:</strong> check that NVDA Remote is
-        installed, that the network allows the connection, and that the
-        Accessolutions server is available.
+        <strong>Remote assistance fails:</strong> check that NVDA's built-in
+        Remote Access is enabled or that a compatible module is installed and
+        active, that the network allows the connection, and that the
+        Accessolutions server is available. An existing remote session must be
+        confirmed and disconnected before a new request.
       </li>
       <li>
         <strong>The keyboard appears captured after Ctrl+I:</strong> wait for

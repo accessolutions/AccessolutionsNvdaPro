@@ -225,6 +225,12 @@ msgstr "Recherche annulée."
 msgid "Recherche incrémentale activée."
 msgstr "Recherche incrémentale activée."
 
+msgid "Recherche l'occurrence précédente du dernier texte recherché."
+msgstr "Recherche l'occurrence précédente du dernier texte recherché."
+
+msgid "Recherche l'occurrence suivante du dernier texte recherché."
+msgstr "Recherche l'occurrence suivante du dernier texte recherché."
+
 msgid "Rechercher automatiquement les mises à jour au démarrage de NVDA"
 msgstr "Rechercher automatiquement les mises à jour au démarrage de NVDA"
 
@@ -263,3 +269,18 @@ msgstr "Une vérification des mises à jour est déjà en cours."
 
 msgid "Vérifier les mises à jour..."
 msgstr "Vérifier les mises à jour..."
+
+msgid "Une connexion d'accès distant est déjà active. Voulez-vous la désactiver avant d'établir une nouvelle connexion esclave ?"
+msgstr "Une connexion d'accès distant est déjà active. Voulez-vous la désactiver avant d'établir une nouvelle connexion esclave ?"
+
+msgid "Impossible de désactiver la connexion d'accès distant. La nouvelle demande n'a pas été lancée."
+msgstr "Impossible de désactiver la connexion d'accès distant. La nouvelle demande n'a pas été lancée."
+
+msgid "Produits et services pour personnes déficientes visuelles - Accessolutions"
+msgstr "Produits et services pour personnes déficientes visuelles - Accessolutions"
+
+msgid "Ouvre le site Accessolutions dans le navigateur par défaut"
+msgstr "Ouvre le site Accessolutions dans le navigateur par défaut"
+
+msgid "Impossible d'ouvrir le site Accessolutions dans le navigateur par défaut."
+msgstr "Impossible d'ouvrir le site Accessolutions dans le navigateur par défaut."

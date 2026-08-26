@@ -43,7 +43,7 @@ jobs:
               raise SystemExit("\n".join(errors))
           PY
 
-      - name: Run updater tests
+      - name: Run unit tests
         shell: bash
         run: python -m unittest discover --start-directory tests --pattern 'test_*.py' --verbose
 

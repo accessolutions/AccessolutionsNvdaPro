@@ -47,8 +47,11 @@
         être effectué avant chaque publication.
       </li>
       <li>
-        L'assistance à distance nécessite l'extension NVDA Remote, installée et
-        activée dans NVDA.
+        L'assistance à distance utilise l'accès distant intégré de NVDA s'il
+        est activé dans NVDA 2026.1, ou un module compatible comme NVDA Remote,
+        Telenvda ou Telenvda Accessolutions s'il est installé et actif. Si
+        aucun module compatible n'est détecté, l'extension tente tout de même
+        d'ouvrir la demande de connexion.
       </li>
     </ul>
     <p>
@@ -99,6 +102,12 @@
       SHA-256, puis demande le redémarrage de NVDA pour terminer l'installation.
       Une erreur réseau au démarrage est enregistrée dans le journal sans
       interrompre NVDA.
+    </p>
+    <p>
+      Le menu système <strong>Accessolutions &gt; Produits et services pour
+      personnes déficientes visuelles - Accessolutions</strong> ouvre le site
+      <a href="https://accessolutions.fr">https://accessolutions.fr</a> dans
+      le navigateur par défaut.
     </p>
 
     <h2 id="navigation">Navigation web</h2>
@@ -161,7 +170,8 @@
       <li>Tapez tout ou partie du texte recherché, rapidement si nécessaire.</li>
       <li>
         À chaque caractère, l'extension recherche depuis le début du document,
-        déplace le curseur virtuel sur la première occurrence et lit sa ligne.
+        déplace le curseur virtuel sur la première occurrence et lit sa ligne,
+        puis la suite du paragraphe lorsqu'elle est disponible.
       </li>
     </ol>
     <p>
@@ -169,6 +179,13 @@
       La recherche s'arrête automatiquement après quatre secondes d'inactivité.
       Si aucun caractère n'a été saisi, NVDA annonce « Recherche annulée ». Si
       le texte n'est pas trouvé, NVDA l'annonce comme introuvable.
+    </p>
+    <p>
+      La saisie utilise la conversion clavier de NVDA afin de respecter la
+      disposition active, notamment pour les claviers français, les chiffres,
+      les caractères accentués et AltGr. Après une recherche réussie,
+      <kbd>F3</kbd> recherche l'occurrence suivante et
+      <kbd>Maj+F3</kbd> l'occurrence précédente.
     </p>
     <p>
       Cette fonction capture temporairement les frappes clavier. <kbd>Retour
@@ -247,8 +264,22 @@
       </li>
     </ol>
     <p>
-      La clé n'est pas enregistrée par l'extension. Pour interrompre la session,
-      utilisez la commande de déconnexion proposée par NVDA Remote.
+      Avant de demander la nouvelle connexion, l'extension vérifie l'accès
+      distant activé et l'état des modules connus. Si une connexion distante
+      est déjà active, une confirmation est demandée ; elle est déconnectée
+      avant le lancement de la nouvelle connexion esclave. En cas de refus,
+      d'échec de déconnexion ou si une connexion est encore signalée comme
+      active, la nouvelle demande n'est pas lancée. Si le module ne permet pas
+      de confirmer l'état après la demande de déconnexion, l'essai est tout de
+      même effectué et le module distant gère alors la situation. Si aucun
+      module distant compatible n'est détecté, l'URL est également ouverte ;
+      son traitement dépend alors de la présence d'un gestionnaire du
+      protocole <code>nvdaremote://</code> sur le poste.
+    </p>
+    <p>
+      La clé n'est pas enregistrée par l'extension. Pour interrompre une
+      session établie, utilisez ensuite la commande de déconnexion proposée
+      par le module distant.
     </p>
     <p>
       <strong>Confidentialité et sécurité :</strong> l'extension transmet la clé
@@ -309,9 +340,11 @@
         standards de NVDA.
       </li>
       <li>
-        <strong>L'assistance échoue :</strong> vérifiez que NVDA Remote est
-        installé, que le réseau autorise la connexion et que le serveur
-        Accessolutions est disponible.
+        <strong>L'assistance échoue :</strong> vérifiez que l'accès distant
+        intégré de NVDA est activé ou qu'un module compatible est installé et
+        actif, que le réseau autorise la connexion et que le serveur
+        Accessolutions est disponible. Une session distante existante doit
+        être confirmée puis déconnectée avant une nouvelle demande.
       </li>
       <li>
         <strong>Le clavier semble capturé après Ctrl+I :</strong> attendez la

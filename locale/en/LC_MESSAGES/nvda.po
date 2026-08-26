@@ -225,6 +225,12 @@ msgstr "Search cancelled."
 msgid "Recherche incrémentale activée."
 msgstr "Incremental search enabled."
 
+msgid "Recherche l'occurrence précédente du dernier texte recherché."
+msgstr "Find the previous occurrence of the last searched text."
+
+msgid "Recherche l'occurrence suivante du dernier texte recherché."
+msgstr "Find the next occurrence of the last searched text."
+
 msgid "Rechercher automatiquement les mises à jour au démarrage de NVDA"
 msgstr "Automatically check for updates when NVDA starts"
 
@@ -263,3 +269,18 @@ msgstr "An update check is already in progress."
 
 msgid "Vérifier les mises à jour..."
 msgstr "Check for updates..."
+
+msgid "Une connexion d'accès distant est déjà active. Voulez-vous la désactiver avant d'établir une nouvelle connexion esclave ?"
+msgstr "A remote access connection is already active. Do you want to disconnect it before establishing a new slave connection?"
+
+msgid "Impossible de désactiver la connexion d'accès distant. La nouvelle demande n'a pas été lancée."
+msgstr "Unable to disconnect the remote access connection. The new request was not started."
+
+msgid "Produits et services pour personnes déficientes visuelles - Accessolutions"
+msgstr "Products and services for people with visual impairments - Accessolutions"
+
+msgid "Ouvre le site Accessolutions dans le navigateur par défaut"
+msgstr "Open the Accessolutions website in the default browser"
+
+msgid "Impossible d'ouvrir le site Accessolutions dans le navigateur par défaut."
+msgstr "Unable to open the Accessolutions website in the default browser."

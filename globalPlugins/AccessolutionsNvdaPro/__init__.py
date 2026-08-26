@@ -3,6 +3,7 @@
 import globalPluginHandler
 import os
 import ui
+import webbrowser
 from logHandler import log
 import api
 import inputCore
@@ -17,6 +18,8 @@ from . import updater
 import addonHandler
 from scriptHandler import script
 addonHandler.initTranslation()
+
+ACCESSOLUTIONS_WEBSITE = "https://accessolutions.fr"
 
 confSpecs = {
 	"useFrenchNavGestures": "boolean(default=true)",
@@ -131,9 +134,11 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self._startup_fallback_timer = None
 		self._startup_update_timer = None
 		self.remote_item = None
+		self.website_item = None
 		self.update_item = None
 		self.submenu_item = None
 		self._remote_menu_handler = None
+		self._website_menu_handler = None
 		self._update_menu_handler = None
 		self.createMenu()
 		gui.settingsDialogs.NVDASettingsDialog.categoryClasses.append(
@@ -161,6 +166,17 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			self._remote_menu_handler,
 			self.remote_item
 		)
+		self.website_item = self.accessolutionsMenu.Append(
+			wx.ID_ANY,
+			_("Produits et services pour personnes déficientes visuelles - Accessolutions"),
+			_("Ouvre le site Accessolutions dans le navigateur par défaut"),
+		)
+		self._website_menu_handler = self._on_website_menu
+		gui.mainFrame.sysTrayIcon.Bind(
+			wx.EVT_MENU,
+			self._website_menu_handler,
+			self.website_item,
+		)
 		self.update_item = self.accessolutionsMenu.Append(
 			wx.ID_ANY,
 			_("Vérifier les mises à jour..."),
@@ -187,6 +203,16 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if not self._terminated:
 			self._start_update_check(manual=True)
 
+	def _on_website_menu(self, event):
+		if self._terminated:
+			return
+		try:
+			if not webbrowser.open(ACCESSOLUTIONS_WEBSITE, new=2):
+				raise webbrowser.Error("Le navigateur par défaut n'a pas été lancé")
+		except (OSError, webbrowser.Error):
+			log.exception("Impossible d'ouvrir le site Accessolutions")
+			ui.message(_("Impossible d'ouvrir le site Accessolutions dans le navigateur par défaut."))
+
 	def removeMenu(self):
 		self._stop_timer("_startup_fallback_timer")
 		self._stop_timer("_startup_update_timer")
@@ -204,6 +230,7 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		if tray is not None:
 			for item, handler in (
 				(self.remote_item, self._remote_menu_handler),
+				(self.website_item, self._website_menu_handler),
 				(self.update_item, self._update_menu_handler),
 			):
 				if item is None or handler is None:
@@ -224,8 +251,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 				pass
 			self.submenu_item = None
 		self.remote_item = None
+		self.website_item = None
 		self.update_item = None
 		self._remote_menu_handler = None
+		self._website_menu_handler = None
 		self._update_menu_handler = None
 
 	def _stop_timer(self, attribute):
