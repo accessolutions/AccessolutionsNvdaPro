@@ -126,6 +126,15 @@ class _Gesture:
         self.character = character
 
 
+class _GestureWithoutIdentifier:
+
+    def __init__(self, character="", main_key_name=""):
+        self.isModifier = False
+        self.normalizedIdentifiers = ()
+        self.character = character
+        self.mainKeyName = main_key_name
+
+
 class _AnnouncementInfo:
 
     def __init__(self, text="correspondance"):
@@ -229,6 +238,67 @@ class RechercheIncrementaleTests(unittest.TestCase):
         self.assertFalse(consumed)
         self.assertEqual("1", plugin.searchString)
         plugin._scheduleSearch.assert_called_once()
+
+    def test_character_is_added_without_keyboard_identifier(self):
+        plugin = self._active_plugin()
+        plugin._scheduleSearch = MagicMock()
+
+        consumed = plugin._captureFunc(_GestureWithoutIdentifier(character="a"))
+
+        self.assertFalse(consumed)
+        self.assertTrue(plugin._searchActive)
+        self.assertEqual("a", plugin.searchString)
+        plugin._scheduleSearch.assert_called_once()
+
+    def test_character_is_added_before_non_keyboard_identifier(self):
+        plugin = self._active_plugin()
+        plugin._scheduleSearch = MagicMock()
+        gesture = _GestureWithoutIdentifier(character="b")
+        gesture.normalizedIdentifiers = ("mouse:left",)
+
+        consumed = plugin._captureFunc(gesture)
+
+        self.assertFalse(consumed)
+        self.assertTrue(plugin._searchActive)
+        self.assertEqual("b", plugin.searchString)
+        plugin._scheduleSearch.assert_called_once()
+
+    def test_character_is_added_without_identifiers_attribute(self):
+        plugin = self._active_plugin()
+        plugin._scheduleSearch = MagicMock()
+        gesture = _GestureWithoutIdentifier(character="c")
+        del gesture.normalizedIdentifiers
+
+        consumed = plugin._captureFunc(gesture)
+
+        self.assertFalse(consumed)
+        self.assertTrue(plugin._searchActive)
+        self.assertEqual("c", plugin.searchString)
+        plugin._scheduleSearch.assert_called_once()
+
+    def test_backspace_uses_main_key_without_keyboard_identifier(self):
+        plugin = self._active_plugin()
+        plugin.searchString = "abc"
+        plugin._scheduleSearch = MagicMock()
+
+        consumed = plugin._captureFunc(
+            _GestureWithoutIdentifier(main_key_name="backspace")
+        )
+
+        self.assertFalse(consumed)
+        self.assertEqual("ab", plugin.searchString)
+        plugin._scheduleSearch.assert_called_once()
+
+    def test_escape_uses_main_key_without_keyboard_identifier(self):
+        plugin = self._active_plugin()
+        plugin._cancelSearch = MagicMock()
+
+        consumed = plugin._captureFunc(
+            _GestureWithoutIdentifier(main_key_name="escape")
+        )
+
+        self.assertFalse(consumed)
+        plugin._cancelSearch.assert_called_once_with()
 
     def test_control_character_does_not_enter_query(self):
         plugin = self._active_plugin()

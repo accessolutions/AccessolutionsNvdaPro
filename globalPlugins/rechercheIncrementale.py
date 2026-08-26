@@ -124,10 +124,19 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 
 	def _getGestureIdentifier(self, gesture):
 		identifiers = [
-			identifier for identifier in gesture.normalizedIdentifiers
-			if identifier.startswith("kb")
+			identifier
+			for identifier in (getattr(gesture, "normalizedIdentifiers", None) or ())
+			if isinstance(identifier, str) and identifier.startswith("kb")
 		]
 		return min(identifiers, key=len) if identifiers else None
+
+	def _getGestureMain(self, gesture, gestureIdentifier):
+		if gestureIdentifier:
+			prefix, separator, main = gestureIdentifier.partition(":")
+			if separator and prefix:
+				return main
+		main = getattr(gesture, "mainKeyName", "") or ""
+		return main.casefold() if isinstance(main, str) else ""
 
 	def _getCharacter(self, gesture):
 		# KeyboardInputGesture.character utilise la conversion officielle de NVDA.
@@ -221,13 +230,28 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			return True
 		if gesture.isModifier:
 			return True
+
+		# Un clavier NVDA fournit normalement un identifiant kb, mais certains
+		# gestes clavier peuvent ne pas en fournir. Le caractère reste la source
+		# fiable pour continuer la saisie dans la recherche incrémentale.
+		try:
+			character = self._getCharacter(gesture)
+		except Exception:
+			log.exception("getCharacter")
+			character = ""
+		if isinstance(character, str) and character and all(char.isprintable() for char in character):
+			self.searchString += character
+			log.info(u"Recherche incrémentale : %s", self.searchString)
+			self._scheduleSearch()
+			return False
+
 		gestureIdentifier = self._getGestureIdentifier(gesture)
-		if gestureIdentifier is None:
+		main = self._getGestureMain(gesture, gestureIdentifier)
+		if not main:
 			self._releaseCapture()
 			self._treeInterceptor = None
 			self._clearLastSearch()
 			return True
-		main = gestureIdentifier.split(":", 1)[1]
 
 		if main in ("escape", "esc"):
 			self._cancelSearch()
@@ -248,17 +272,6 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			return not self._findRelative(reverse)
 		if main == "backspace":
 			self.searchString = self.searchString[:-1]
-			self._scheduleSearch()
-			return False
-
-		try:
-			character = self._getCharacter(gesture)
-		except Exception:
-			log.exception("getCharacter")
-			character = ""
-		if character and all(char.isprintable() for char in character):
-			self.searchString += character
-			log.info(u"Recherche incrémentale : %s", self.searchString)
 			self._scheduleSearch()
 			return False
 
