@@ -15,6 +15,7 @@ import gui
 import globalVars
 from . import remoteRequests
 from . import updater
+from . import sharedMenu
 import addonHandler
 from scriptHandler import script
 addonHandler.initTranslation()
@@ -133,6 +134,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		self._startup_update_registered = False
 		self._startup_fallback_timer = None
 		self._startup_update_timer = None
+		self._menu_state = None
+		self._menu_owner = "accessolutionsNVDAPro"
 		self.remote_item = None
 		self.website_item = None
 		self.update_item = None
@@ -154,45 +157,39 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			self._startup_fallback_timer = wx.CallLater(10000, self.postStartupHandler)
 
 	def createMenu(self):
-		self.accessolutionsMenu = wx.Menu()
-		self.remote_item = self.accessolutionsMenu.Append(
-			wx.ID_ANY,
+		tray = getattr(getattr(gui, "mainFrame", None), "sysTrayIcon", None)
+		system_menu = getattr(tray, "menu", None)
+		self._menu_state = sharedMenu.acquire(
+			system_menu,
+			self._menu_owner,
+			event_source=tray,
+			title=_("&Accessolutions"),
+			position=2,
+		)
+		if self._menu_state is None:
+			return
+		self.accessolutionsMenu = self._menu_state.menu
+		self.remote_item = sharedMenu.addItem(
+			self._menu_state,
+			self._menu_owner,
 			_("&Assistance à distance"),
-			_("Effectue une demande d'assistance pour une prise de contrôle de l'ordinateur à distance par un technicien Accessolutions")
+			_("Effectue une demande d'assistance pour une prise de contrôle de l'ordinateur à distance par un technicien Accessolutions"),
+			self._on_remote_menu,
 		)
-		self._remote_menu_handler = self._on_remote_menu
-		gui.mainFrame.sysTrayIcon.Bind(
-			wx.EVT_MENU,
-			self._remote_menu_handler,
-			self.remote_item
-		)
-		self.website_item = self.accessolutionsMenu.Append(
-			wx.ID_ANY,
+		self.website_item = sharedMenu.addItem(
+			self._menu_state,
+			self._menu_owner,
 			_("Produits et services pour personnes déficientes visuelles - Accessolutions"),
 			_("Ouvre le site Accessolutions dans le navigateur par défaut"),
+			self._on_website_menu,
+			key=sharedMenu.WEBSITE_ITEM_KEY,
 		)
-		self._website_menu_handler = self._on_website_menu
-		gui.mainFrame.sysTrayIcon.Bind(
-			wx.EVT_MENU,
-			self._website_menu_handler,
-			self.website_item,
-		)
-		self.update_item = self.accessolutionsMenu.Append(
-			wx.ID_ANY,
+		self.update_item = sharedMenu.addItem(
+			self._menu_state,
+			self._menu_owner,
 			_("Vérifier les mises à jour..."),
-			_("Rechercher une nouvelle version d'Accessolutions NVDA Pro")
-		)
-		self._update_menu_handler = self._on_update_menu
-		gui.mainFrame.sysTrayIcon.Bind(
-			wx.EVT_MENU,
-			self._update_menu_handler,
-			self.update_item,
-		)
-		self.submenu_item = gui.mainFrame.sysTrayIcon.menu.InsertMenu(
-			2,
-			wx.ID_ANY,
-			_("&Accessolutions"),
-			self.accessolutionsMenu
+			_("Rechercher une nouvelle version d'Accessolutions NVDA Pro"),
+			self._on_update_menu,
 		)
 
 	def _on_remote_menu(self, event):
@@ -226,30 +223,8 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 			gui.settingsDialogs.NVDASettingsDialog.categoryClasses.remove(SettingsDlg)
 		except ValueError:
 			pass
-		tray = getattr(gui.mainFrame, "sysTrayIcon", None)
-		if tray is not None:
-			for item, handler in (
-				(self.remote_item, self._remote_menu_handler),
-				(self.website_item, self._website_menu_handler),
-				(self.update_item, self._update_menu_handler),
-			):
-				if item is None or handler is None:
-					continue
-				try:
-					tray.Unbind(wx.EVT_MENU, handler=handler, source=item)
-				except (AttributeError, TypeError):
-					pass
-		if self.submenu_item is not None:
-			if tray is not None:
-				try:
-					tray.menu.RemoveItem(self.submenu_item)
-				except (AttributeError, RuntimeError):
-					pass
-			try:
-				self.submenu_item.Destroy()
-			except (AttributeError, RuntimeError):
-				pass
-			self.submenu_item = None
+		sharedMenu.release(self._menu_state, self._menu_owner)
+		self._menu_state = None
 		self.remote_item = None
 		self.website_item = None
 		self.update_item = None
