@@ -111,7 +111,12 @@ class _TreeInterceptor:
         self.selection = None
 
 
-class _DelegatingTree(_TreeInterceptor):
+class BrowseModeTreeInterceptor(_TreeInterceptor):
+
+    pass
+
+
+class _DelegatingTree(BrowseModeTreeInterceptor):
 
     def __init__(self):
         super().__init__()
@@ -124,6 +129,10 @@ class _Gesture:
         self.isModifier = False
         self.normalizedIdentifiers = (identifier,)
         self.character = character
+        self.sent = False
+
+    def send(self):
+        self.sent = True
 
 
 class _GestureWithoutIdentifier:
@@ -376,6 +385,22 @@ class RechercheIncrementaleTests(unittest.TestCase):
         plugin.script_findNext(gesture)
 
         tree.script_findNext.assert_called_once_with(gesture)
+
+    def test_web_shortcuts_are_passed_to_application_outside_web_context(self):
+        api.focus = _Focus(None)
+
+        for method_name, identifier in (
+            ("script_rechercheIncrementale", "kb:control+i"),
+            ("script_findNext", "kb:f3"),
+            ("script_findPrevious", "kb:shift+f3"),
+        ):
+            with self.subTest(method_name=method_name):
+                plugin = recherche_incrementale.GlobalPlugin()
+                gesture = _Gesture(identifier)
+
+                getattr(plugin, method_name)(gesture)
+
+                self.assertTrue(gesture.sent)
 
     def test_relative_search_collapses_in_requested_direction(self):
         tree = _RelativeSearchTree()

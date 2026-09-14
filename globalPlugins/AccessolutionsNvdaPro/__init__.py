@@ -32,9 +32,7 @@ config.conf.spec["AccessolutionsNVDAPro"] = confSpecs
 # Associations ajoutées par gestures.ini. Elles sont retirées avant chaque
 # chargement afin d'éviter les doublons dans la carte globale de NVDA.
 _NAV_GESTURE_MAPPINGS = (
-	("cursorManager", "CursorManager", "findPrevious", "kb:shift+f3"),
 	("cursorManager", "CursorManager", "find", "kb:control+f"),
-	("cursorManager", "CursorManager", "findNext", "kb:f3"),
 	("browseMode", "BrowseModeTreeInterceptor", "refreshBuffer", "kb:nvda+escape"),
 	("browseMode", "BrowseModeTreeInterceptor", "moveToStartOfContainer", "kb:q+shift"),
 	("browseMode", "BrowseModeTreeInterceptor", "previousTable", "kb:y+shift"),

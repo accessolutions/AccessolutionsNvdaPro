@@ -47,7 +47,10 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	def script_rechercheIncrementale(self, gesture):
 		focus = api.getFocusObject()
 		treeInterceptor = getattr(focus, "treeInterceptor", None)
-		if treeInterceptor is None or not getattr(treeInterceptor, "isReady", True):
+		if not self._isWebContext(treeInterceptor):
+			gesture.send()
+			return
+		if not getattr(treeInterceptor, "isReady", True):
 			ui.message(_("La recherche incrémentale est disponible uniquement dans un document web prêt."))
 			return
 		manager = inputCore.manager
@@ -81,6 +84,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		gesture="kb:f3",
 	)
 	def script_findNext(self, gesture):
+		if not self._isWebContext():
+			gesture.send()
+			return
 		if self._findRelative(reverse=False):
 			return
 		self._delegateFind("script_findNext", gesture)
@@ -90,6 +96,9 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 		gesture="kb:shift+f3",
 	)
 	def script_findPrevious(self, gesture):
+		if not self._isWebContext():
+			gesture.send()
+			return
 		if self._findRelative(reverse=True):
 			return
 		self._delegateFind("script_findPrevious", gesture)
@@ -111,6 +120,22 @@ class GlobalPlugin(globalPluginHandler.GlobalPlugin):
 	def _getCurrentTreeInterceptor(self):
 		focus = api.getFocusObject()
 		return getattr(focus, "treeInterceptor", None)
+
+	def _isWebContext(self, treeInterceptor=None):
+		if treeInterceptor is None:
+			treeInterceptor = self._getCurrentTreeInterceptor()
+		if treeInterceptor is None:
+			return False
+		try:
+			if any(
+				cls.__name__ == "BrowseModeTreeInterceptor"
+				for cls in type(treeInterceptor).__mro__
+			):
+				return True
+			return getattr(treeInterceptor, "webAccess", None) is not None
+		except Exception:
+			log.debug("Contexte web inaccessible", exc_info=True)
+			return False
 
 	def _isCurrentSearchDocument(self, treeInterceptor=None):
 		target = self._treeInterceptor if treeInterceptor is None else treeInterceptor
